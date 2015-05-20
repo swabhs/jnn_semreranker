@@ -8,6 +8,7 @@ import com.google.common.collect.Table;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
+import edu.cmu.cs.lti.semreranking.utils.FeReader;
 import edu.cmu.cs.lti.semreranking.utils.FileUtils;
 import edu.cmu.cs.lti.semreranking.utils.Scored;
 
@@ -37,7 +38,7 @@ public class TrainingDataGenerator {
 
     public TrainingDataGenerator() {
         Table<Integer, Integer, Scored<FrameSemanticParse>> allTrainInstances = FileUtils
-                .readKBestSemaforOutput(RESDIR, xmlFileExtn, FEDIR, feFileExtn);
+                .readKBestSemaforOutput(RESDIR, xmlFileExtn, FEDIR, feFileExtn, new FeReader());
         sortTrainInstancesByFscores(allTrainInstances);
     }
 

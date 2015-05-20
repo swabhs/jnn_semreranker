@@ -53,20 +53,20 @@ public class FeReader {
 
         final int startArgToken = 8;
 
-        int sentNum = 0;
-        int corpusSentNum = 1;
+        int corpusSentNum = 1; // HACK - first sentence of corpus
+        int prevSentNum = corpusSentNum;
         for (int f = 0; f < feLines.size(); f++) {
             String[] feToks = feLines.get(f).split("\t");
             corpusSentNum = Integer.parseInt(feToks[7]);
-            while (corpusSentNum > sentNum) { // new Sentence
+            while (corpusSentNum != prevSentNum) { // new Sentence
 
-                fsps.put(corpusSentNum, new FrameSemanticParse(predStartPosMap, predEndPosMap,
+                fsps.put(prevSentNum, new FrameSemanticParse(predStartPosMap, predEndPosMap,
                         frameMap, Optional.of(frameScores)));
                 predStartPosMap = Maps.newHashMap();
                 predEndPosMap = Maps.newHashMap();
                 frameMap = HashBasedTable.create();
                 frameScores = Maps.newHashMap();
-                sentNum++;
+                prevSentNum = corpusSentNum;
             }
 
             String frameId = feToks[3];
@@ -95,7 +95,8 @@ public class FeReader {
         }
         fsps.put(corpusSentNum, new FrameSemanticParse(predStartPosMap, predEndPosMap,
                 frameMap, Optional.of(frameScores)));
-
+        // System.err.println(fsps.keySet());
+        // fsps.get(1).print();
         return fsps;
     }
 

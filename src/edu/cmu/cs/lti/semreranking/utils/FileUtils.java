@@ -28,26 +28,29 @@ public class FileUtils {
         SentsAndToks sentsAndToks = reader.readTokFile(tokFileName);
 
         Table<Integer, Integer, Scored<FrameSemanticParse>> allFsps =
-                readKBestSemaforOutput(resDir, xmlFileExtn, trainfeFileDir, feFileExtn); // TODO:
-                                                                                         // not
-                                                                                         // right
+                readKBestSemaforOutput(resDir, xmlFileExtn, trainfeFileDir, feFileExtn, reader); // TODO:
+        // not
+        // right
         // because f-scores
         // do not correspond to sorted
-        // parses
+        // parses. TODO: make sorted f-scores!!
 
-        System.err.println(sentsAndToks.allToks.size());
+        System.err.println("Number of sentences read = " + sentsAndToks.allToks.size());
+        System.err.println("Numer of FSPs read = " + allFsps.rowKeySet().size());
 
-        System.err.println(allFsps.rowKeySet().size());
-
-        for (int ex = 0; ex < allFsps.rowKeySet().size(); ex++) {
+        for (int ex : allFsps.rowKeySet()) {
             List<Scored<FrameSemanticParse>> sortedParses = Lists.newArrayList();
             for (int rank = 0; rank < allFsps.columnKeySet().size(); rank++) {
                 sortedParses.add(allFsps.get(ex, rank));
             }
-
+            System.err.println("num sorted parses of ex " + ex + " = " + sortedParses.size());
             instances.add(new TrainingInstance(sentsAndToks.allToks.get(ex), sortedParses));
         }
 
+        // System.err.println("test: ***** " +
+        // instances.get(0).sortedParses.get(0).entity.toString());
+
+        instances.get(0).sortedParses.get(0).entity.print();
         FrameNetVocabs vocabs = new FrameNetVocabs(
                 sentsAndToks.tokensVocab,
                 reader.getFrameIds(),
@@ -59,30 +62,36 @@ public class FileUtils {
             String resultsDir,
             String xmlFileExtn,
             String outputFeDir,
-            String feFileExtn) {
+            String feFileExtn,
+            FeReader reader) {
         Table<Integer, Integer, Scored<FrameSemanticParse>> allFsps = HashBasedTable.create();
-        int numRanks = new File(resultsDir).listFiles().length;
-        for (int i = 0; i < numRanks; i++) {
-            String resFileName = resultsDir + i + xmlFileExtn;
-            String feFileName = outputFeDir + i + feFileExtn;
-            FeReader reader = new FeReader();
+        int numRanks = new File(outputFeDir).listFiles().length;
+
+        for (int rank = 0; rank < numRanks; rank++) {
+            String resFileName = resultsDir + rank + xmlFileExtn;
+            String feFileName = outputFeDir + rank + feFileExtn;
 
             Map<Integer, FrameSemanticParse> fsps = reader.readSingleFEfile(feFileName);
-            List<String> lines = BasicFileReader.readFile(resFileName);
+            List<String> fscoreLines = BasicFileReader.readFile(resFileName);
 
-            for (int j = 1; j < lines.size(); j++) {
-                String[] ele = lines.get(j).trim().split("\t");
+            for (int lineNum = 1; lineNum < fscoreLines.size(); lineNum++) {
+                String[] ele = fscoreLines.get(lineNum).trim().split("\t");
                 int exNum = Integer.parseInt(ele[0]);
-                Scored<FrameSemanticParse> instance = new Scored<FrameSemanticParse>(
-                        fsps.get(exNum), Double.parseDouble(ele[3]));
-                allFsps.put(exNum, i, instance);
 
-                // TODO: remove
-                // if (j == 5) {
-                // break;
-                // }
+                if (fsps.containsKey(exNum)) { // read only relevant f-scores
+                    Scored<FrameSemanticParse> instance = new Scored<FrameSemanticParse>(
+                            fsps.get(exNum), Double.parseDouble(ele[3]));
+                    allFsps.put(exNum, rank, instance);
+                }
+
             }
         }
+
+        System.err.println("Number of ranks read = " + allFsps.columnKeySet().size());
+        System.err.println("Number of examples read = " + allFsps.rowKeySet().size());
+        System.err.println("total = " + allFsps.size());
+
+        allFsps.get(1, 0).entity.print();
         return allFsps;
     }
 
