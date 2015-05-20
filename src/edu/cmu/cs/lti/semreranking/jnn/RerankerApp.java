@@ -248,8 +248,9 @@ public class RerankerApp {
         FrameSemanticParse fsp = new FrameSemanticParse(
                 predStartMap, predEndMap, frameMap, null);
         Scored<FrameSemanticParse> scoredFsp = new Scored<FrameSemanticParse>(fsp, 1.0);
-        TrainingInstance instance = new TrainingInstance(words, Arrays.asList(scoredFsp));
-        run(vocabs, instance, new ArrayParams());
-    }
+        List<TrainingInstance> instances = Arrays.asList(
+                new TrainingInstance(words, Arrays.asList(scoredFsp)));
 
+        run(vocabs, instances, new ArrayParams());
+    }
 }
