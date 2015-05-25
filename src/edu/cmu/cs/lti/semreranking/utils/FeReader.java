@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
@@ -53,7 +52,7 @@ public class FeReader {
 
         final int startArgToken = 8;
 
-        int corpusSentNum = 1; // HACK - first sentence of corpus
+        int corpusSentNum = 1; // HACK - this corpus ignores the 0th sentence
         int prevSentNum = corpusSentNum;
         for (int f = 0; f < feLines.size(); f++) {
             String[] feToks = feLines.get(f).split("\t");
@@ -62,6 +61,7 @@ public class FeReader {
 
                 fsps.put(prevSentNum, new FrameSemanticParse(predStartPosMap, predEndPosMap,
                         frameMap, Optional.of(frameScores)));
+
                 predStartPosMap = Maps.newHashMap();
                 predEndPosMap = Maps.newHashMap();
                 frameMap = HashBasedTable.create();
@@ -79,48 +79,34 @@ public class FeReader {
             predEndPosMap.put(frameId, predEnd);
 
             // save the arguments or roles
-            int numArgs = (feToks.length - 8) / 2; // Integer.parseInt(feToks[2]) - 1;
-
-            for (int arg = 0; arg < numArgs; arg++) {
-                String argId = feToks[startArgToken + arg * 2];
+            int numArgs = (feToks.length - 8) / 2; // BUG in FE generation script...;
+            if (numArgs == 0) { // No args for frame
+                String argId = "NULL"; // Fake argid for frame with no args
 
                 String frameArgId = StringUtils.makeFrameArgId(frameId, argId);
                 addFrameArgId(frameArgId);
 
-                String argPosToks[] = feToks[startArgToken + arg * 2 + 1].split(":");
-                int start = Integer.parseInt(argPosToks[0]);
-                int end = argPosToks.length == 2 ? Integer.parseInt(argPosToks[1]) : start;
+                int start = -1; // HACKS for frames with no arguments
+                int end = -1;// HACKS for frames with no arguments
                 frameMap.put(frameId, argId + "___" + start, Pair.of(start, end));
+
+            } else {
+                for (int arg = 0; arg < numArgs; arg++) {
+                    String argId = feToks[startArgToken + arg * 2];
+
+                    String frameArgId = StringUtils.makeFrameArgId(frameId, argId);
+                    addFrameArgId(frameArgId);
+
+                    String argPosToks[] = feToks[startArgToken + arg * 2 + 1].split(":");
+                    int start = Integer.parseInt(argPosToks[0]);
+                    int end = argPosToks.length == 2 ? Integer.parseInt(argPosToks[1]) : start;
+                    frameMap.put(frameId, argId + "___" + start, Pair.of(start, end));
+                }
             }
         }
+
         fsps.put(corpusSentNum, new FrameSemanticParse(predStartPosMap, predEndPosMap,
                 frameMap, Optional.of(frameScores)));
-        // System.err.println(fsps.keySet());
-        // fsps.get(1).print();
         return fsps;
-    }
-
-    public SentsAndToks readTokFile(String tokFileName) {
-        Set<String> tokensVocab = Sets.newHashSet();
-        List<String[]> allToks = Lists.newArrayList();
-        List<String> sents = BasicFileReader.readFile(tokFileName);
-
-        for (String sent : sents) {
-            String[] tokens = sent.split(" ");
-            allToks.add(tokens);
-            for (String token : tokens) {
-                tokensVocab.add(token);
-            }
-        }
-        return new SentsAndToks(allToks, tokensVocab);
-    }
-
-    public class SentsAndToks {
-        public List<String[]> allToks;
-        public Set<String> tokensVocab;
-        public SentsAndToks(List<String[]> allToks, Set<String> tokensVocab) {
-            this.allToks = allToks;
-            this.tokensVocab = tokensVocab;
-        }
     }
 }

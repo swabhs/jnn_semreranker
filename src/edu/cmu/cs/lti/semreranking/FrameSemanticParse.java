@@ -19,11 +19,12 @@ public class FrameSemanticParse {
         public Set<Argument> arguments;
         public final int numArgs;
 
-        public Optional<Double> score; // TODO change, not the correct logic
+        public Double score;
 
         public Frame(String id, int predStartPos, int predEndPos,
-                Set<Argument> arguments, Optional<Double> score) {
+                Set<Argument> arguments, Double score) {
             this.id = id;
+            this.score = score;
             this.predStartPos = predStartPos;
             this.predEndPos = predEndPos;
             this.arguments = arguments;

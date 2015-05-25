@@ -41,4 +41,11 @@ public class MathUtils {
         }
         return sum;
     }
+
+    public static double hinge(double val) {
+        if (val > 0.0) {
+            return val;
+        }
+        return 0.0;
+    }
 }
