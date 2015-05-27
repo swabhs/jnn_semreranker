@@ -1,5 +1,6 @@
 package edu.cmu.cs.lti.semreranking;
 
+// TODO: can be made better
 public class Scored<T> implements Comparable<Scored<T>> {
     public T entity;
     public Double fscore;
@@ -20,6 +21,15 @@ public class Scored<T> implements Comparable<Scored<T>> {
         this.rDenom = rDenom;
         this.pNum = pNum;
         this.pDenom = pDenom;
+    }
+
+    public Scored(T entity, FrameScore score) {
+        this.entity = entity;
+        this.fscore = score.fscore;
+        this.rNum = score.rnum;
+        this.rDenom = score.rdenom;
+        this.pNum = score.pnum;
+        this.pDenom = score.pdenom;
     }
 
     @Override

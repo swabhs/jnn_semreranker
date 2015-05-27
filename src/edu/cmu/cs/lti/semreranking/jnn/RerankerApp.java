@@ -20,10 +20,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
+import edu.cmu.cs.lti.semreranking.Argument;
 import edu.cmu.cs.lti.semreranking.DataInstance;
+import edu.cmu.cs.lti.semreranking.Frame;
 import edu.cmu.cs.lti.semreranking.FrameSemanticParse;
-import edu.cmu.cs.lti.semreranking.FrameSemanticParse.Argument;
-import edu.cmu.cs.lti.semreranking.FrameSemanticParse.Frame;
 import edu.cmu.cs.lti.semreranking.Scored;
 import edu.cmu.cs.lti.semreranking.TestData;
 import edu.cmu.cs.lti.semreranking.TestInstance;
@@ -67,8 +67,10 @@ public class RerankerApp {
     private void doDeepLearning(TrainData data, TestData testData, TestData devData) {
 
         System.err.println("\n\n1-best = "
-                + Oracle.getMicroCorpusAvg(testData.testInstances, 1) + "\t 100-best = "
-                + Oracle.getMicroCorpusAvg(testData.testInstances, 10) + "\n");
+                + formatter.format(Oracle.getMicroCorpusAvg(testData.testInstances, 1))
+                + "\t" + testData.numRanks + "-best = "
+                + formatter.format(Oracle.getMicroCorpusAvg(testData.testInstances,
+                        testData.numRanks)) + "\n");
 
         double errorPerEx[] = new double[data.trainInstances.size()];
         Map<Integer, DenseNeuronArray> finalScoresPerEx = Maps.newHashMap();
@@ -105,16 +107,16 @@ public class RerankerApp {
             }
 
             double error = MathUtils.arraySum(errorPerEx);
-            System.err.println("error in iteration " + epoch + " : " + error);
+            System.err.println("error in iteration " + epoch + " : " + formatter.format(error));
 
             Map<Integer, Integer> bestRanks = getBestRanks(testData);
-            double testScore = Evaluator.getRerankedMacroAvg(testData.testInstances, bestRanks);
+            double testScore = Evaluator.getRerankedMicroAvg(testData.testInstances, bestRanks);
+            System.err.print("test = " + formatter.format(testScore) + "\t");
+
             Map<Integer, Integer> bestDevRanks = getBestRanks(devData);
-            double devScore = Evaluator.getRerankedMacroAvg(devData.testInstances, bestDevRanks);
-            System.err
-                    .println("test = "
-                            + formatter.format(testScore) + "\t dev = "
-                            + formatter.format(devScore) + "\n");
+            double devScore = Evaluator.getRerankedMicroAvg(devData.testInstances, bestDevRanks);
+            System.err.println("dev = " + formatter.format(devScore) + "\n");
+
         }
     }
 

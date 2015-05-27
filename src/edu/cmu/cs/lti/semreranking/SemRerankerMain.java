@@ -53,10 +53,10 @@ public class SemRerankerMain {
         Map<Integer, Integer> bestRanks = reranker.getBestRanks(testData);
         System.err.println("Oracle 1-best score = "
                 + Oracle.getMicroCorpusAvg(testData.testInstances, 1));
-        System.err.println("Oracle 100-best score = "
-                + Oracle.getMicroCorpusAvg(testData.testInstances, 100));
+        System.err.println("Oracle " + testData.numRanks + "-best score = "
+                + Oracle.getMicroCorpusAvg(testData.testInstances, testData.numRanks));
 
-        System.err.println("Reranked score = " + Evaluator.getRerankedMacroAvg(
+        System.err.println("Reranked score = " + Evaluator.getRerankedMicroAvg(
                 testData.testInstances, bestRanks));
     }
 }

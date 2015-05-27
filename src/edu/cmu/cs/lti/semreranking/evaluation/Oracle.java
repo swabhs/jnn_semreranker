@@ -1,5 +1,7 @@
 package edu.cmu.cs.lti.semreranking.evaluation;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,8 @@ import edu.cmu.cs.lti.semreranking.Scored;
 import edu.cmu.cs.lti.semreranking.TestInstance;
 
 public class Oracle {
+
+    public static NumberFormat formatter = new DecimalFormat("#0.00000");
 
     public static double getMicroCorpusAvg(Map<Integer, TestInstance> instances, int maxRank) {
         // double avgf1 = 0.0;
@@ -87,8 +91,7 @@ public class Oracle {
                 }
             }
 
-            orderFes.put(numEx,
-                    inst.unsortedParses.get(bestRank).entity.toString(inst.tokens, numEx));
+            orderFes.put(numEx, inst.unsortedParses.get(bestRank).entity.toString(numEx));
             orderedRanks.put(numEx, numEx + "\t" + bestRank);
         }
 
@@ -127,17 +130,32 @@ public class Oracle {
         // System.err.println("Numer of TEST FSPs read = " + allTestFsps.keySet().size());
         //
         // Map<Integer, TestInstance> testInstances = Maps.newHashMap();
+        // int numFrames = 0;
         // for (int ex : allTestFsps.keySet()) {
         // List<Scored<FrameSemanticParse>> unsortedParses = allTestFsps.get(ex);
+        // numFrames += allTestFsps.get(ex).get(0).entity.numFrames;
         // testInstances
         // .put(ex, new TestInstance(testSentsAndToks.allToks.get(ex), unsortedParses));
         // }
+        // System.err.println("Number of total frames = " + numFrames);
         //
-        // System.err.println("Micro = " + getMicroCorpusAvg(testInstances, 1));
+        // System.err.println("\nMicro Oracle Evaluation\n---------------------");
+        //
         // int maxRank = 100;
-        // System.err.println("Micro = " + getMicroCorpusAvg(testInstances, maxRank));
-        // System.err.println("Macro = " + getMacroCorpusAvg(testInstances, maxRank));
+        // System.err.println("1\t" + getMicroCorpusAvg(testInstances, 1));
+        // for (int i = 25; i <= maxRank; i += 25) {
+        // System.err.println(i + "\t" + getMicroCorpusAvg(testInstances, i));
+        // }
+        //
+        // System.err.println("\nMacro Oracle Evaluation\n---------------------");
+        //
+        // System.err.println("1\t" + getMacroCorpusAvg(testInstances, 1));
+        // for (int i = 25; i <= maxRank; i += 25) {
+        // System.err.println(i + "\t" + getMacroCorpusAvg(testInstances, i));
+        // }
+        //
         // writeOracleBest(testInstances, maxRank);
         writeBestParses(args[0], args[1]);
     }
+
 }

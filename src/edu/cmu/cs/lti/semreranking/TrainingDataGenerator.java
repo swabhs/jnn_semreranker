@@ -10,13 +10,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.internal.Maps;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.google.common.collect.TreeMultiset;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
+import edu.cmu.cs.lti.semreranking.utils.CodeGrave;
 import edu.cmu.cs.lti.semreranking.utils.FeReader;
 import edu.cmu.cs.lti.semreranking.utils.FileUtils;
 
@@ -31,10 +34,13 @@ public class TrainingDataGenerator {
     @Parameter(names = "-mini", arity = 1, description = "use a mini corpus to test")
     public static boolean useMini = true;
 
+    @Parameter(names = "-semhome", description = "SEMAFOR home")
+    public static String semhome = "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
+
     public static NumberFormat formatter = new DecimalFormat("#0.00000");
 
-    public TrainingDataGenerator() {
-        DataPaths dataPaths = new DataPaths(useMini, false, SemRerankerMain.model);
+    public void sortTrainingInsts() {
+
         // Table<Integer, Integer, Scored<FrameSemanticParse>> unsorted = FileUtils
         // .readScoredFsps(dataPaths.xmlDir, dataPaths.feDir, new FeReader());
         // System.err.println("1-best = " + Evaluator.getCorpusFscore(unsorted));
@@ -43,6 +49,7 @@ public class TrainingDataGenerator {
         // sortTrainInstancesByFscores(unsorted);
         // writeSortedInstancesToFile(sorted);
 
+        DataPaths dataPaths = new DataPaths(useMini, false, SemRerankerMain.model);
         Map<Integer, TreeMultiset<Scored<FrameSemanticParse>>> sortedTrainInstances = FileUtils
                 .readAndSortTrain(dataPaths.xmlDir, dataPaths.feDir, new FeReader());
         TrainingDataGenerator.writeSortedInstancesToFile(sortedTrainInstances);
@@ -91,7 +98,6 @@ public class TrainingDataGenerator {
     public static void writeSortedInstancesToFile(
             Map<Integer, TreeMultiset<Scored<FrameSemanticParse>>> sortedTrainInstances) {
 
-        SentsAndToks sentsAndToks = FileUtils.readTokFile(DataPaths.TOKEN_FILE_TRAIN);
         DataPaths dataPaths = new DataPaths(useMini, true, SemRerankerMain.model);
 
         int i = 0;
@@ -119,7 +125,7 @@ public class TrainingDataGenerator {
                                 new BufferedWriter(new FileWriter(outXmlFileName, true)));
                     }
 
-                    outFe.println(instance.entity.toString(sentsAndToks.allToks.get(ex), ex));
+                    outFe.println(instance.entity.toString(ex));
 
                     outXml.println(ex + "\t"
                             + formatter.format(instance.rNum / instance.rDenom) + "("
@@ -144,7 +150,6 @@ public class TrainingDataGenerator {
     void writeSortedInstancesToFile(
             Table<Integer, Integer, Scored<FrameSemanticParse>> sortedTrainInstances) {
 
-        SentsAndToks sentsAndToks = FileUtils.readTokFile(DataPaths.TOKEN_FILE_TRAIN);
         DataPaths dataPaths = new DataPaths(useMini, true, SemRerankerMain.model);
 
         for (Integer col : sortedTrainInstances.columnKeySet()) {
@@ -152,12 +157,10 @@ public class TrainingDataGenerator {
             List<String> fscoreLines = Lists.newArrayList();
             fscoreLines.add("Sentence ID\tSORTED Fscore\tSORTED Fscore\tSORTED Fscore");
             for (Integer row : sortedTrainInstances.rowKeySet()) {
-                if (sentsAndToks.allToks.size() > row) {
-                    Scored<FrameSemanticParse> instance = sortedTrainInstances.get(row, col);
-                    feLines.add(instance.entity.toString(sentsAndToks.allToks.get(row), row));
-                    fscoreLines.add(row + "\t" + instance.fscore + "\t" + instance.fscore + "\t"
-                            + instance.fscore);
-                }
+                Scored<FrameSemanticParse> instance = sortedTrainInstances.get(row, col);
+                feLines.add(instance.entity.toString(row));
+                fscoreLines.add(row + "\t" + instance.fscore + "\t" + instance.fscore + "\t"
+                        + instance.fscore);
             }
             BasicFileWriter.writeStrings(feLines, dataPaths.feDir + col.toString()
                     + DataPaths.FE_FILE_EXTN);
@@ -170,14 +173,11 @@ public class TrainingDataGenerator {
             Table<Integer, Integer, Scored<FrameSemanticParse>> allTrain,
             String feDir,
             String xmlDir,
-            String tokFileName) {
-        SentsAndToks sentsAndToks = FileUtils.readTokFile(tokFileName);
+            int numExamples,
+            int numRanks) {
         // DataPaths dataPaths = new DataPaths(true, false, SemRerankerMain.model);
         // String feDir = dataPaths.feDir;
         // String xmlDir = dataPaths.xmlDir;
-
-        int numRanks = 20;
-        int numExamples = 15;
 
         System.err.println("Making mini dataset. Writing data to...");
 
@@ -191,9 +191,9 @@ public class TrainingDataGenerator {
 
             int exNum = 0;
             for (Integer row : allTrain.rowKeySet()) {
-                if (allTrain.contains(row, col) && sentsAndToks.allToks.size() > row) {
+                if (allTrain.contains(row, col)) {
                     Scored<FrameSemanticParse> instance = allTrain.get(row, col);
-                    feLines.add(instance.entity.toString(sentsAndToks.allToks.get(row), row));
+                    feLines.add(instance.entity.toString(row));
                     fscoreLines.add(row + "\t"
                             + formatter.format(instance.rNum / instance.rDenom) + "("
                             + (instance.rNum) + "/"
@@ -215,14 +215,28 @@ public class TrainingDataGenerator {
 
     public static void main(String[] args) {
         // new TrainingDataGenerator();
-        String semhome = "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/experiments/basic_tbps/";
-        String inp = "semreranker_dev";
-        String outp = "semreranker_dev_mini";
-        Table<Integer, Integer, Scored<FrameSemanticParse>> unsorted = FileUtils
-                .readScoredFsps(semhome + "/results/" + inp + "/partial/",
-                        semhome + "/output/" + inp + "/frameElements/",
-                        new FeReader());
-        makeMiniDataSet(unsorted, semhome + "/output/" + outp + "/frameElements/", semhome
-                + "/results/" + outp + "/partial/", DataPaths.TOKEN_FILE_DEV);
+        new JCommander(new TrainingDataGenerator(), args);
+        System.err.println(useMini);
+        String expDir = semhome + "/experiments/basic_tbps/";
+
+        Map<String, Integer> dataSetSizes = Maps.newHashMap();
+        dataSetSizes.put("train", 70);
+        dataSetSizes.put("dev", 10);
+        dataSetSizes.put("test", 15);
+
+        for (String dataset : dataSetSizes.keySet()) {
+            String inp = "semreranker_" + dataset;
+            String outp = "semreranker_" + dataset + "_mini";
+            Table<Integer, Integer, Scored<FrameSemanticParse>> unsorted = CodeGrave
+                    .readScoredFsps(expDir + "/results/" + inp + "/partial/",
+                            expDir + "/output/" + inp + "/frameElements/",
+                            new FeReader());
+            makeMiniDataSet(unsorted,
+                    expDir + "/output/" + outp + "/frameElements/",
+                    expDir + "/results/" + outp + "/partial/",
+                    dataSetSizes.get(dataset),
+                    40);
+        }
+
     }
 }

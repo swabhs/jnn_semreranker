@@ -2,7 +2,6 @@ package edu.cmu.cs.lti.semreranking.jnn;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import jnn.functions.composite.LookupTable;
@@ -16,10 +15,10 @@ import vocab.Vocab;
 
 import com.beust.jcommander.internal.Sets;
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 
-import edu.cmu.cs.lti.nlp.swabha.basic.Pair;
+import edu.cmu.cs.lti.semreranking.Argument;
+import edu.cmu.cs.lti.semreranking.Frame;
 import edu.cmu.cs.lti.semreranking.FrameSemanticParse;
 import edu.cmu.cs.lti.semreranking.Scored;
 import edu.cmu.cs.lti.semreranking.lossfunctions.PairwiseLoss;
@@ -42,19 +41,20 @@ public class RerankerAppTest {
         FrameNetVocabs vocabs = new FrameNetVocabs(tokens, frameIds, frameArguments);
 
         String words[] = new String[]{"the", "rich", "banker", "purchased", "stocks"};
-        String frame = "BUY";
+        String frameId = "BUY";
+        // List<Argument> arguments = Lists.newArrayList();
+        Set<Argument> arguments = Sets.newHashSet();
+        arguments.add(new Argument("buyer", 0, 2));
+        arguments.add(new Argument("goods", 4, 4));
 
-        Map<String, Integer> predStartMap = Maps.newHashMap();
-        predStartMap.put(frame, 3);
-        Map<String, Integer> predEndMap = Maps.newHashMap();
-        predEndMap.put(frame, 3);
+        Frame frame = new Frame(frameId, 3, 3, "purchased.v", "purchased", arguments, 2.98);
+        List<Frame> frames = Arrays.asList(frame);
 
-        Table<String, String, Pair<Integer, Integer>> frameMap = HashBasedTable.create();
-        frameMap.put(frame, "BUY_buyer", Pair.of(0, 2));
-        frameMap.put(frame, "BUY_goods", Pair.of(4, 4));
+        // Table<String, String, Pair<Integer, Integer>> frameMap = HashBasedTable.create();
+        // frameMap.put(frame, "BUY_buyer", Pair.of(0, 2));
+        // frameMap.put(frame, "BUY_goods", Pair.of(4, 4));
 
-        FrameSemanticParse fsp = new FrameSemanticParse(
-                predStartMap, predEndMap, frameMap, null);
+        FrameSemanticParse fsp = new FrameSemanticParse(frames);
         Scored<FrameSemanticParse> scoredFsp = new Scored<FrameSemanticParse>(fsp, 1.0);
         // TreeMultiset<TrainingInstance> instances = Arrays.asList(
         // new TrainingInstance(words, Arrays.asList(scoredFsp)));
@@ -64,23 +64,9 @@ public class RerankerAppTest {
     }
 
     public static void main(String[] args) {
-
         GlobalParameters.learningRateDefault = 0.01;
 
-        // String inputSentence = "time flies like arrows";
-        // String[] inputTokens = inputSentence.split("\\s+");
-
-        // Vocab tokenVocab = new Vocab();
-        // // adding all tokens to the vocabulary
-        // for (int i = 0; i < inputTokens.length; i++) {
-        // tokenVocab.addWordToVocab(inputTokens[i]);
-        // }
-        //
-        // tokenVocab.sortVocabByCount(); // TODO: what is this?
-        // tokenVocab.generateHuffmanCodes();// TODO: what is this?
-
         int inpDim = 2; // dimension of the word vectors for the tokens of the sentence
-        // LookupTable tokenTable = new LookupTable(tokenVocab, inpDim);
 
         // output label vocab
         Vocab labelVocab = new Vocab();

@@ -20,7 +20,7 @@ public class PairwiseLoss {
 
     public static double getLoss(
             Map<Integer, DenseNeuronArray> scores, TrainInstance instance) {
-        int numRanks = scores.keySet().size();
+        int numRanks = instance.numParses;
 
         double loss = 0.0;
         // for (int n = 0; n < numEx; n++) {

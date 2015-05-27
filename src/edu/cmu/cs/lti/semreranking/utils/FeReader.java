@@ -3,15 +3,14 @@ package edu.cmu.cs.lti.semreranking.utils;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Maps;
+import com.beust.jcommander.internal.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Table;
 
-import edu.cmu.cs.lti.nlp.swabha.basic.Pair;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
+import edu.cmu.cs.lti.semreranking.Argument;
+import edu.cmu.cs.lti.semreranking.Frame;
 import edu.cmu.cs.lti.semreranking.FrameSemanticParse;
 
 public class FeReader {
@@ -40,73 +39,92 @@ public class FeReader {
         frameArgIds.add(frameArgId);
     }
 
-    public Map<Integer, FrameSemanticParse> readSingleFEfile(String feFileName) {
-        Map<Integer, FrameSemanticParse> fsps = Maps.newHashMap(); // map to example number
+    public Frame getFrameFromFeLine(String feLine) {
+        String[] feToks = feLine.trim().split("\t");
 
-        List<String> feLines = BasicFileReader.readFile(feFileName);
+        double frameScore = Double.parseDouble(feToks[1]);
+        String frameId = feToks[3];
+        String predType = feToks[4];
+        String predToken = feToks[6];
+        addFrameId(frameId);
 
-        Map<String, Integer> predStartPosMap = Maps.newHashMap();
-        Map<String, Integer> predEndPosMap = Maps.newHashMap();
-        Table<String, String, Pair<Integer, Integer>> frameMap = HashBasedTable.create();
-        Map<String, Double> frameScores = Maps.newHashMap();
+        String[] predToks = feToks[5].split("_");
+        int predStart = Integer.parseInt(predToks[0]);
+        int predEnd = predToks.length == 2 ? Integer.parseInt(predToks[1]) : predStart;
 
+        // save the arguments or roles
         final int startArgToken = 8;
+        int numArgs = (feToks.length - 8) / 2; // BUG in FE generation script...;
+        // List<Argument> arguments = Lists.newArrayList();
+        Set<Argument> arguments = Sets.newHashSet();
 
-        int corpusSentNum = 1; // HACK - this corpus ignores the 0th sentence
-        int prevSentNum = corpusSentNum;
-        for (int f = 0; f < feLines.size(); f++) {
-            String[] feToks = feLines.get(f).split("\t");
-            corpusSentNum = Integer.parseInt(feToks[7]);
-            while (corpusSentNum != prevSentNum) { // new Sentence
-
-                fsps.put(prevSentNum, new FrameSemanticParse(predStartPosMap, predEndPosMap,
-                        frameMap, Optional.of(frameScores)));
-
-                predStartPosMap = Maps.newHashMap();
-                predEndPosMap = Maps.newHashMap();
-                frameMap = HashBasedTable.create();
-                frameScores = Maps.newHashMap();
-                prevSentNum = corpusSentNum;
-            }
-
-            String frameId = feToks[3];
-            addFrameId(frameId);
-
-            String[] predToks = feToks[5].split("_");
-            int predStart = Integer.parseInt(predToks[0]);
-            int predEnd = predToks.length == 2 ? Integer.parseInt(predToks[1]) : predStart;
-            predStartPosMap.put(frameId, predStart);
-            predEndPosMap.put(frameId, predEnd);
-
-            // save the arguments or roles
-            int numArgs = (feToks.length - 8) / 2; // BUG in FE generation script...;
-            if (numArgs == 0) { // No args for frame
-                String argId = "NULL"; // Fake argid for frame with no args
+        String argId = "NULL";// Default argid for frame with no args
+        int start = -1; // HACKS for frames with no arguments
+        int end = -1;// HACKS for frames with no arguments
+        if (numArgs == 0) { // No args for frame
+            String frameArgId = StringUtils.makeFrameArgId(frameId, argId);
+            addFrameArgId(frameArgId);
+            arguments.add(new Argument(argId, start, end));
+        } else {
+            for (int argNum = 0; argNum < numArgs; argNum++) {
+                argId = feToks[startArgToken + argNum * 2];
 
                 String frameArgId = StringUtils.makeFrameArgId(frameId, argId);
                 addFrameArgId(frameArgId);
 
-                int start = -1; // HACKS for frames with no arguments
-                int end = -1;// HACKS for frames with no arguments
-                frameMap.put(frameId, argId + "___" + start, Pair.of(start, end));
-
-            } else {
-                for (int arg = 0; arg < numArgs; arg++) {
-                    String argId = feToks[startArgToken + arg * 2];
-
-                    String frameArgId = StringUtils.makeFrameArgId(frameId, argId);
-                    addFrameArgId(frameArgId);
-
-                    String argPosToks[] = feToks[startArgToken + arg * 2 + 1].split(":");
-                    int start = Integer.parseInt(argPosToks[0]);
-                    int end = argPosToks.length == 2 ? Integer.parseInt(argPosToks[1]) : start;
-                    frameMap.put(frameId, argId + "___" + start, Pair.of(start, end));
-                }
+                String argPosToks[] = feToks[startArgToken + argNum * 2 + 1].split(":");
+                start = Integer.parseInt(argPosToks[0]);
+                end = argPosToks.length == 2 ? Integer.parseInt(argPosToks[1]) : start;
+                arguments.add(new Argument(argId, start, end));
             }
         }
 
-        fsps.put(corpusSentNum, new FrameSemanticParse(predStartPosMap, predEndPosMap,
-                frameMap, Optional.of(frameScores)));
+        return new Frame(frameId, predStart, predEnd, predType, predToken, arguments, frameScore);
+    }
+
+    public Map<Integer, FrameSemanticParse> readFeFile(String feFileName) {
+        List<String> feLines = BasicFileReader.readFile(feFileName);
+
+        // map to example number
+        Map<Integer, FrameSemanticParse> fsps = new TreeMap<Integer, FrameSemanticParse>();
+        List<Frame> frames = Lists.newArrayList();
+
+        int corpusSentNum = Integer.parseInt(feLines.get(0).trim().split("\t")[7]);
+        int prevSentNum = corpusSentNum;
+
+        for (int f = 0; f < feLines.size(); f++) {
+            String[] feToks = feLines.get(f).split("\t");
+            corpusSentNum = Integer.parseInt(feToks[7]);
+
+            if (corpusSentNum != prevSentNum) { // new Sentence
+
+                fsps.put(prevSentNum, new FrameSemanticParse(frames));
+                frames = Lists.newArrayList();
+                prevSentNum = corpusSentNum;
+            }
+
+            frames.add(getFrameFromFeLine(feLines.get(f)));
+        }
+
+        fsps.put(corpusSentNum, new FrameSemanticParse(frames));
         return fsps;
+    }
+
+    public static void main(String[] args) {
+        FeReader r = new FeReader();
+        String feFileName = "/Users/sswayamd/Documents/"
+
+                + "workspace/jnn/SemanticReranker/data/experiments/basic_tbps/output/" +
+                "semreranker_test/frameElements/99thBest.argid.predict.frame.elements";
+        Map<Integer, FrameSemanticParse> fsps = r.readFeFile(feFileName);
+        int total = 0;
+        for (int ex : fsps.keySet()) {
+            total += fsps.get(ex).numFrames;
+        }
+
+        fsps.get(1).print();
+        System.err.println(total);
+        List<String> feLines = BasicFileReader.readFile(feFileName);
+        System.err.println(feLines.size());
     }
 }
