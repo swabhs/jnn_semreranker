@@ -1,4 +1,6 @@
-package edu.cmu.cs.lti.semreranking;
+package edu.cmu.cs.lti.semreranking.datastructs;
+
+import edu.cmu.cs.lti.semreranking.evaluation.Result;
 
 // TODO: can be made better
 public class Scored<T> implements Comparable<Scored<T>> {
@@ -8,28 +10,27 @@ public class Scored<T> implements Comparable<Scored<T>> {
     public double rDenom;
     public double pNum;
     public double pDenom;
+    public double synScore;
 
-    public Scored(T fsp, Double fscore) {
-        this.entity = fsp;
-        this.fscore = fscore;
-    }
-
-    public Scored(T entity, Double fscore, double rNum, double rDenom, double pNum, double pDenom) {
+    public Scored(T entity, double rNum, double rDenom, double pNum, double pDenom, double synScore) {
         this.entity = entity;
-        this.fscore = fscore;
         this.rNum = rNum;
         this.rDenom = rDenom;
         this.pNum = pNum;
         this.pDenom = pDenom;
+        this.fscore = Result.getFscore(pNum, pDenom, rNum, rDenom);
+
+        this.synScore = synScore;
     }
 
-    public Scored(T entity, FrameScore score) {
+    public Scored(T entity, FspScore score, double synScore) {
         this.entity = entity;
         this.fscore = score.fscore;
         this.rNum = score.rnum;
         this.rDenom = score.rdenom;
         this.pNum = score.pnum;
         this.pDenom = score.pdenom;
+        this.synScore = synScore;
     }
 
     @Override

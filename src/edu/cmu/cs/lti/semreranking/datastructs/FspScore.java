@@ -1,12 +1,13 @@
-package edu.cmu.cs.lti.semreranking;
+package edu.cmu.cs.lti.semreranking.datastructs;
 
-public class FrameScore {
+public class FspScore {
     double pnum;
     double pdenom;
     double rnum;
     double rdenom;
     double fscore;
-    public FrameScore(double pnum, double pdenom, double rnum, double rdenom, double fscore) {
+    
+    public FspScore(double pnum, double pdenom, double rnum, double rdenom, double fscore) {
         super();
         this.pnum = pnum;
         this.pdenom = pdenom;

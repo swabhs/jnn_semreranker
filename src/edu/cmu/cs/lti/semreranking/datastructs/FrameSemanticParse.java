@@ -1,4 +1,4 @@
-package edu.cmu.cs.lti.semreranking;
+package edu.cmu.cs.lti.semreranking.datastructs;
 
 import java.util.List;
 
@@ -9,19 +9,18 @@ public class FrameSemanticParse {
     public int numFrames;
     public int numFrameArgs;
 
+    public double semaforScore;
+
     public FrameSemanticParse(List<Frame> frames) {
         this.frames = frames;
         numFrames = frames.size();
         numFrameArgs = 0;
+        semaforScore = 0.0;
         for (Frame f : frames) {
             numFrameArgs += f.numArgs;
+            semaforScore += f.score;
         }
-    }
-
-    public void print() {
-        for (Frame frame : frames) {
-            frame.print();
-        }
+        semaforScore /= numFrames;
     }
 
     public String toString(int exNum) {
@@ -35,6 +34,12 @@ public class FrameSemanticParse {
             }
         }
         return builder.toString();
+    }
+
+    public void print() {
+        for (Frame frame : frames) {
+            frame.print();
+        }
     }
 
 }

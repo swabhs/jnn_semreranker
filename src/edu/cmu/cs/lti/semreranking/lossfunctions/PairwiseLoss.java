@@ -23,7 +23,7 @@ public class PairwiseLoss {
         int numRanks = instance.numParses;
 
         double loss = 0.0;
-        // for (int n = 0; n < numEx; n++) {
+        final double stepSize = 1.0; // SemRerankerMain.learningRate;
 
         for (int i = 0; i < numRanks - 1; i++) {
             for (int j = i + 1; j < numRanks; j++) {
@@ -33,13 +33,20 @@ public class PairwiseLoss {
 
                 double iloss = MathUtils.hinge(margin - better + wworse);
 
-                scores.get(i).addError(0, iloss);
-                scores.get(j).addError(0, -iloss);
+                if (iloss > 0.0) {
+                    double betterGrad = -1.0;
+                    double worseGrad = 1.0;
+
+                    double betterError = -betterGrad * stepSize; // y_new - y_old = - grad *
+                                                                 // stepsize
+                    double worseError = -worseGrad * stepSize;
+                    scores.get(i).addError(0, betterError);
+                    scores.get(j).addError(0, worseError);
+                }
                 loss += iloss;
 
             }
         }
-        // }
         return loss;
     }
 

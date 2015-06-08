@@ -12,95 +12,125 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultiset;
 
+import edu.cmu.cs.lti.nlp.swabha.basic.Conll;
+import edu.cmu.cs.lti.nlp.swabha.basic.ConllElement;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
 import edu.cmu.cs.lti.semreranking.DataPaths;
-import edu.cmu.cs.lti.semreranking.FrameScore;
-import edu.cmu.cs.lti.semreranking.FrameSemanticParse;
-import edu.cmu.cs.lti.semreranking.RerankingData;
-import edu.cmu.cs.lti.semreranking.Scored;
-import edu.cmu.cs.lti.semreranking.SemRerankerMain;
-import edu.cmu.cs.lti.semreranking.SentsAndToks;
 import edu.cmu.cs.lti.semreranking.TestData;
 import edu.cmu.cs.lti.semreranking.TestInstance;
 import edu.cmu.cs.lti.semreranking.TrainData;
 import edu.cmu.cs.lti.semreranking.TrainInstance;
-import edu.cmu.cs.lti.semreranking.jnn.FrameNetVocabs;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameNetVocabs;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FspScore;
+import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
 public class FileUtils {
 
-    public static RerankingData readAllTrainingData(boolean useMini) {
+    public static class RerankingData {
+
+        public TrainData trainData;
+        public TestData testData;
+        public TestData devData;
+
+        public FrameNetVocabs vocabs;
+
+        public RerankingData(TrainData trainData, TestData testData, TestData devData,
+                FrameNetVocabs vocabs) {
+            this.trainData = trainData;
+            this.testData = testData;
+            this.devData = devData;
+
+            this.vocabs = vocabs;
+        }
+    }
+
+    public static RerankingData readAllRerankingingData(boolean useMini) {
 
         FeReader reader = new FeReader();
+        Set<String> tokensVocab = Sets.newHashSet();
+        Set<String> posVocab = Sets.newHashSet();
 
-        SentsAndToks sentsAndToks = readTokFile(DataPaths.TOKEN_FILE_TRAIN);
-        DataPaths dataPaths = new DataPaths(useMini, false, SemRerankerMain.model);
+        DataPaths dataPaths = new DataPaths(useMini, "train");
         Map<Integer, TreeMultiset<Scored<FrameSemanticParse>>> allTrainFsps =
-                readAndSortTrain(dataPaths.xmlDir, dataPaths.feDir, reader);
+                readAndSortTrain(dataPaths.xmlDir, dataPaths.feDir, dataPaths.synDir, reader);
+        SentsAndToks sentsAndToks = readConlls(dataPaths.conllFile);
+        tokensVocab.addAll(sentsAndToks.tokensVocab);
+        posVocab.addAll(sentsAndToks.posVocab);
 
-        System.err.println("Number of sentences read = " + sentsAndToks.allToks.size());
+        System.err.println("Number of sentences read = " + sentsAndToks.allLemmas.size());
         System.err.println("Numer of FSPs read = " + allTrainFsps.keySet().size());
 
         // Adding the tokens to the fes
         List<TrainInstance> instances = Lists.newArrayList();
         for (int ex : allTrainFsps.keySet()) {
-            instances.add(new TrainInstance(sentsAndToks.allToks.get(ex), allTrainFsps.get(ex)));
+            instances.add(new TrainInstance(
+                    sentsAndToks.allLemmas.get(ex),
+                    sentsAndToks.allPostags.get(ex),
+                    allTrainFsps.get(ex)));
         }
-
-        System.err.println("only train : " + sentsAndToks.tokensVocab.size());
 
         // TEST /////////////////////////
 
-        DataPaths testDataPaths = new DataPaths(useMini, SemRerankerMain.model);
-        SentsAndToks testSentsAndToks = readTokFile(DataPaths.TOKEN_FILE_TEST);
-        sentsAndToks.tokensVocab.addAll(testSentsAndToks.tokensVocab);
-        Map<Integer, List<Scored<FrameSemanticParse>>> allTestFsps =
-                readTest(testDataPaths.xmlDir, testDataPaths.feDir, reader);
+        DataPaths testDataPaths = new DataPaths(useMini, "test");
+        SentsAndToks testSentsAndToks = readConlls(testDataPaths.conllFile);
+        tokensVocab.addAll(testSentsAndToks.tokensVocab);
+        posVocab.addAll(testSentsAndToks.posVocab);
 
-        System.err.println("Number of TEST sentences read = " + testSentsAndToks.allToks.size());
+        Map<Integer, List<Scored<FrameSemanticParse>>> allTestFsps =
+                readTest(testDataPaths.xmlDir, testDataPaths.feDir, testDataPaths.synDir, reader);
+
+        System.err.println("Number of TEST sentences read = "
+                + testSentsAndToks.allLemmas.size());
         System.err.println("Numer of TEST FSPs read = " + allTestFsps.keySet().size());
 
         Map<Integer, TestInstance> testInstances = Maps.newHashMap();
         for (int ex : allTestFsps.keySet()) {
             List<Scored<FrameSemanticParse>> unsortedParses = allTestFsps.get(ex);
-            testInstances
-                    .put(ex, new TestInstance(testSentsAndToks.allToks.get(ex), unsortedParses));
+            testInstances.put(ex, new TestInstance(testSentsAndToks.allLemmas.get(ex),
+                    testSentsAndToks.allPostags.get(ex), unsortedParses));
         }
-
-        System.err.println("test + train : " + sentsAndToks.tokensVocab.size());
 
         // DEV ////////////////////////////////////////
 
-        DataPaths devDataPaths = new DataPaths(useMini, SemRerankerMain.model, "dev");
-        SentsAndToks devSentsAndToks = readTokFile(DataPaths.TOKEN_FILE_DEV);
-        sentsAndToks.tokensVocab.addAll(devSentsAndToks.tokensVocab);
-        Map<Integer, List<Scored<FrameSemanticParse>>> allDevFsps =
-                readTest(devDataPaths.xmlDir, devDataPaths.feDir, reader);
+        DataPaths devDataPaths = new DataPaths(useMini, "dev");
+        SentsAndToks devSentsAndToks = readConlls(devDataPaths.conllFile);
+        tokensVocab.addAll(devSentsAndToks.tokensVocab);
+        posVocab.addAll(devSentsAndToks.posVocab);
 
-        System.err.println("Number of DEV sentences read = " + devSentsAndToks.allToks.size());
+        Map<Integer, List<Scored<FrameSemanticParse>>> allDevFsps =
+                readTest(devDataPaths.xmlDir, devDataPaths.feDir, devDataPaths.synDir, reader);
+
+        System.err.println("Number of DEV sentences read = "
+                + devSentsAndToks.allLemmas.size());
         System.err.println("Numer of DEV FSPs read = " + allDevFsps.keySet().size());
 
         Map<Integer, TestInstance> devInstances = Maps.newHashMap();
         for (int ex : allDevFsps.keySet()) {
             List<Scored<FrameSemanticParse>> unsortedParses = allDevFsps.get(ex);
             devInstances
-                    .put(ex, new TestInstance(devSentsAndToks.allToks.get(ex), unsortedParses));
+                    .put(ex, new TestInstance(devSentsAndToks.allLemmas.get(ex),
+                            devSentsAndToks.allPostags.get(ex),
+                            unsortedParses));
         }
 
-        System.err.println("all : " + sentsAndToks.tokensVocab.size());
-
         // //////////////
-
+        // posVocab.addAll(reader.getPosTags());
         FrameNetVocabs vocabs = new FrameNetVocabs(
-                sentsAndToks.tokensVocab,
+                tokensVocab,
+                posVocab,
+                reader.getPosTags(),
                 reader.getFrameIds(),
                 reader.getFrameArgIds());
-        return new RerankingData(new TrainData(instances, vocabs), new TestData(
-                testInstances), new TestData(devInstances));
+        return new RerankingData(new TrainData(instances), new TestData(
+                testInstances), new TestData(devInstances), vocabs);
     }
 
     public static Map<Integer, TreeMultiset<Scored<FrameSemanticParse>>> readAndSortTrain(
             String xmlDir,
-            String feDir, FeReader reader) {
+            String feDir,
+            String synDir,
+            FeReader reader) {
 
         System.err.println("Reading data from...");
         System.err.println(feDir);
@@ -112,17 +142,20 @@ public class FileUtils {
         for (int rank = 0; rank < numRanks; rank++) {
             String xmlFileName = xmlDir + rank + DataPaths.XML_FILE_EXTN;
             String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
+            String synScoreFileName = synDir + rank + DataPaths.TURBO_FILE_EXTN;
 
             Map<Integer, FrameSemanticParse> fsps = reader.readFeFile(feFileName);
-            Map<Integer, FrameScore> framescores = readFscoreFile(xmlFileName);
+            Map<Integer, FspScore> framescores = readFscoreFile(xmlFileName);
+            Map<Integer, Double> synScores = readSynScoreFile(synScoreFileName);
+
             for (int exNum : fsps.keySet()) {
                 Scored<FrameSemanticParse> scoFsp = null;
                 if (framescores.containsKey(exNum) == false) {
                     scoFsp = new Scored<FrameSemanticParse>(
-                            fsps.get(exNum), 0.0, 0.0, 0.0, 0.0, 0.0);
+                            fsps.get(exNum), 0.0, 0.0, 0.0, 0.0, synScores.get(exNum));
                 } else {
                     scoFsp = new Scored<FrameSemanticParse>(
-                            fsps.get(exNum), framescores.get(exNum));
+                            fsps.get(exNum), framescores.get(exNum), synScores.get(exNum));
                 }
 
                 if (allFsps.containsKey(exNum) == false) {
@@ -139,8 +172,11 @@ public class FileUtils {
         return allFsps;
     }
 
-    public static Map<Integer, List<Scored<FrameSemanticParse>>> readTest(String xmlDir,
-            String feDir, FeReader reader) {
+    public static Map<Integer, List<Scored<FrameSemanticParse>>> readTest(
+            String xmlDir,
+            String feDir,
+            String synDir,
+            FeReader reader) {
 
         System.err.println("Reading data from...");
         System.err.println(feDir);
@@ -152,9 +188,11 @@ public class FileUtils {
         for (int rank = 0; rank < numRanks; rank++) {
             String xmlFileName = xmlDir + rank + DataPaths.XML_FILE_EXTN;
             String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
+            String synScoreFileName = synDir + rank + DataPaths.TURBO_FILE_EXTN;
 
             Map<Integer, FrameSemanticParse> fsps = reader.readFeFile(feFileName);
-            Map<Integer, FrameScore> framescores = readFscoreFile(xmlFileName);
+            Map<Integer, FspScore> framescores = readFscoreFile(xmlFileName);
+            Map<Integer, Double> synScores = readSynScoreFile(synScoreFileName);
 
             // if (rank == 0 && fsps.size() != framescores.size()) {
             // System.err.println(fsps.size() + " " + framescores.size());
@@ -164,10 +202,10 @@ public class FileUtils {
                 Scored<FrameSemanticParse> scoFsp = null;
                 if (framescores.containsKey(exNum) == false) {
                     scoFsp = new Scored<FrameSemanticParse>(
-                            fsps.get(exNum), 0.0, 0.0, 0.0, 0.0, 0.0);
+                            fsps.get(exNum), 0.0, 0.0, 0.0, 0.0, synScores.get(exNum));
                 } else {
                     scoFsp = new Scored<FrameSemanticParse>(
-                            fsps.get(exNum), framescores.get(exNum));
+                            fsps.get(exNum), framescores.get(exNum), synScores.get(exNum));
                 }
                 if (allFsps.containsKey(exNum) == false) {
 
@@ -183,25 +221,55 @@ public class FileUtils {
         return allFsps;
     }
 
-    public static SentsAndToks readTokFile(String fileName) {
-        Set<String> tokensVocab = Sets.newHashSet();
-        List<String[]> allToks = Lists.newArrayList();
-        List<String> sents = BasicFileReader.readFile(fileName);
+    public static class SentsAndToks {
 
-        for (String sent : sents) {
-            String[] tokens = sent.split(" ");
-            allToks.add(tokens);
-            for (String token : tokens) {
-                tokensVocab.add(token);
-            }
+        public List<String[]> allLemmas;
+        public List<String[]> allPostags;
+        public Set<String> tokensVocab;
+        public Set<String> posVocab;
+
+        public SentsAndToks(
+                List<String[]> allLemmas,
+                List<String[]> allPostags,
+                Set<String> tokensVocab,
+                Set<String> posVocab) {
+            this.allLemmas = allLemmas;
+            this.allPostags = allPostags;
+            this.tokensVocab = tokensVocab;
+            this.posVocab = posVocab;
         }
-        return new SentsAndToks(allToks, tokensVocab);
     }
 
-    public static Map<Integer, FrameScore> readFscoreFile(String fscoreFileName) {
+    public static SentsAndToks readConlls(String fileName) {
+        List<String[]> allToks = Lists.newArrayList();
+        List<String[]> allPostags = Lists.newArrayList();
+        Set<String> tokensVocab = Sets.newHashSet();
+        Set<String> posVocab = Sets.newHashSet();
+
+        List<Conll> sents = BasicFileReader.readConllFile(fileName);
+
+        for (Conll sent : sents) {
+            String[] tokens = new String[sent.getElements().size()];
+            String[] posTags = new String[sent.getElements().size()];
+            int i = 0;
+            for (ConllElement element : sent.getElements()) {
+                tokens[i] = element.getLemma();
+                tokensVocab.add(element.getLemma());
+                posTags[i] = element.getCoarsePosTag();
+                posVocab.add(element.getCoarsePosTag());
+                i++;
+            }
+            allToks.add(tokens);
+            allPostags.add(posTags);
+        }
+
+        return new SentsAndToks(allToks, allPostags, tokensVocab, posVocab);
+    }
+
+    public static Map<Integer, FspScore> readFscoreFile(String fscoreFileName) {
         List<String> fscoreLines = BasicFileReader.readFile(fscoreFileName);
 
-        Map<Integer, FrameScore> scores = new TreeMap<Integer, FrameScore>();
+        Map<Integer, FspScore> scores = new TreeMap<Integer, FspScore>();
         for (int lineNum = 1; lineNum < fscoreLines.size(); lineNum++) {
             String[] ele = fscoreLines.get(lineNum).trim().split("\t");
             int exNum = Integer.parseInt(ele[0]);
@@ -214,7 +282,20 @@ public class FileUtils {
             double pDenom = Double.parseDouble(pfrac.split("/")[1].split("\\)")[0]);
             double fscore = Double.parseDouble(ele[3]);
 
-            scores.put(exNum, new FrameScore(pNum, pDenom, rNum, rDenom, fscore));
+            scores.put(exNum, new FspScore(pNum, pDenom, rNum, rDenom, fscore));
+        }
+        return scores;
+    }
+
+    public static Map<Integer, Double> readSynScoreFile(String turboScoreFileName) {
+        List<String> synScoreLines = BasicFileReader.readFile(turboScoreFileName);
+
+        Map<Integer, Double> scores = new TreeMap<Integer, Double>();
+        for (int lineNum = 1; lineNum < synScoreLines.size(); lineNum++) {
+            String[] ele = synScoreLines.get(lineNum).trim().split("\t");
+            int exNum = Integer.parseInt(ele[0]);
+            double synScore = Double.parseDouble(ele[1]);
+            scores.put(exNum, synScore);
         }
         return scores;
     }

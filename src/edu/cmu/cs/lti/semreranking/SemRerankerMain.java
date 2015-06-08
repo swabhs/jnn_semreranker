@@ -1,5 +1,7 @@
 package edu.cmu.cs.lti.semreranking;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Map;
 
 import jnn.training.GlobalParameters;
@@ -7,10 +9,12 @@ import jnn.training.GlobalParameters;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
+import edu.cmu.cs.lti.semreranking.datastructs.FrameNetVocabs;
 import edu.cmu.cs.lti.semreranking.evaluation.Evaluator;
 import edu.cmu.cs.lti.semreranking.evaluation.Oracle;
-import edu.cmu.cs.lti.semreranking.jnn.RerankerApp;
+import edu.cmu.cs.lti.semreranking.jnn.FspRerankerApp;
 import edu.cmu.cs.lti.semreranking.utils.FileUtils;
+import edu.cmu.cs.lti.semreranking.utils.FileUtils.RerankingData;
 
 /**
  * Sentences with no frames are basically not read as a FrameSemanticParse.
@@ -23,40 +27,110 @@ public class SemRerankerMain {
     @Parameter(names = "-semhome", description = "SEMAFOR home")
     public static String semHome =
             "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
-    // public static String semHome = "/usr0/home/sswayamd/semafor/semafor/";
-
-    @Parameter(names = "-mini", arity = 1, description = "use a mini corpus to test")
-    private static boolean useMini = true;
 
     @Parameter(names = "-model", description = "semafor model used to obtain reranking data")
     public static String model = "basic_tbps";
 
+    @Parameter(names = "-wordvectors", description = "")
+    public static String wvfile = "wiki_structskipngram_50.framenet";
+
+    @Parameter(names = "-mini", arity = 1, description = "use a mini corpus to test")
+    private static boolean useMini = true;
+
+    @Parameter(names = "-usewordvecs", arity = 1, description = "use pretrained word vectors")
+    public static boolean usePretrained = true;
+
+    @Parameter(names = "-dim", description = "size of param representation")
+    public static int paramDim = 50; // TODO: does not have be the size of all params, need to
+                                     // separate this from inputDim
+
+    @Parameter(names = "-numIter", description = "number of iterations of SGD/Adadelta/Adagrad")
+    public static int numIter = 400;
+
+    @Parameter(names = "-learnrate", description = "size of param representation")
+    public static double learningRate = 0.001;
+
+    @Parameter(names = "-l2", description = "l2 regularizer")
+    public static double l2 = 0.01;
+
+    @Parameter(names = "-adadelta", arity = 1, description = "use AdaDelta for learning")
+    public static boolean useAdadelta = false;
+
+    @Parameter(names = "-adagrad", arity = 1, description = "use AdaGrad for learning")
+    public static boolean useAdagrad = false;
+
+    public static NumberFormat formatter = new DecimalFormat("#0.00000");
+
     public static void main(String[] args) {
         new JCommander(new SemRerankerMain(), args);
 
-        GlobalParameters.learningRateDefault = 0.005;
+        GlobalParameters.learningRateDefault = learningRate;
         GlobalParameters.useMomentumDefault = true;
-        GlobalParameters.useAdagradDefault = true;
+        GlobalParameters.momentumDefault = 0.7; // 0.7 - works great!
+        GlobalParameters.useAdadeltaDefault = useAdadelta;
+        GlobalParameters.useAdagradDefault = useAdagrad;
+        GlobalParameters.l2regularizerLambdaDefault = l2;
 
-        RerankingData allData = FileUtils.readAllTrainingData(useMini);
+        RerankingData allData = FileUtils.readAllRerankingingData(useMini);
         TrainData trainData = allData.trainData;
         TestData testData = allData.testData;
         TestData devData = allData.devData;
+        FrameNetVocabs vocabs = allData.vocabs;
 
-        System.err.println("######### Test instances : " + testData.testInstances.size());
+        double trainBest = Oracle.getTrainUnsortedOracle1best();
+        double oracleTrainBest = Oracle.getMicroCorpusAvg(trainData.trainInstances).f1;
 
-        System.err.println("Num frame - arguments = " + trainData.vocabs.frameArguments.size());
-        System.err.println("Num frames = " + trainData.vocabs.frameIds.size());
-        System.err.println("Num tokens = " + trainData.vocabs.tokens.size());
+        double devBest = Oracle.getMicroCorpusAvg(devData.testInstances, 1).f1;
+        double oracleDevBest = Oracle.getMicroCorpusAvg(devData.testInstances, devData.numRanks).f1;
 
-        RerankerApp reranker = new RerankerApp(trainData, testData, devData);
-        Map<Integer, Integer> bestRanks = reranker.getBestRanks(testData);
-        System.err.println("Oracle 1-best score = "
-                + Oracle.getMicroCorpusAvg(testData.testInstances, 1));
-        System.err.println("Oracle " + testData.numRanks + "-best score = "
-                + Oracle.getMicroCorpusAvg(testData.testInstances, testData.numRanks));
+        double testBest = Oracle.getMicroCorpusAvg(testData.testInstances, 1).f1;
+        double oracleTestBest = Oracle.getMicroCorpusAvg(testData.testInstances,
+                testData.numRanks).f1;
 
-        System.err.println("Reranked score = " + Evaluator.getRerankedMicroAvg(
-                testData.testInstances, bestRanks));
+        System.err.println("\n\nVocab Stats:");
+        System.err.println("# frame - arguments = " + vocabs.frameArguments.size());
+        System.err.println("# frames = " + vocabs.frameIds.size());
+        System.err.println("# tokens = " + vocabs.tokens.size());
+        System.err.println("# pos tags = " + vocabs.posTags.size());
+        System.err.println("# gold FN pos tags = " + vocabs.goldFNPosTags.size());
+
+        System.err.println("\n\nOracle Results:");
+        System.err.println("TRAIN\t1-best = "
+                + formatter.format(trainBest)
+                + "\t   -best = "
+                + formatter.format(oracleTrainBest));
+
+        System.err.println("DEV  \t1-best = "
+                + formatter.format(devBest)
+                + "\t" + devData.numRanks + "-best = "
+                + formatter.format(oracleDevBest));
+
+        System.err.println("TEST \t1-best = "
+                + formatter.format(testBest)
+                + "\t" + testData.numRanks + "-best = "
+                + formatter.format(oracleTestBest));
+
+        System.err.println("\n\nPerforming Deep Learning:");
+        FspRerankerApp reranker = new FspRerankerApp(trainData, testData, devData, vocabs);
+        Map<Integer, Integer> bestRanks = reranker.doDeepDecoding(testData);
+
+        System.err.print("Reranked final:\t");
+        Evaluator.getRerankedMicroAvg(testData.testInstances, bestRanks).print();
+
+        System.err.println("\n\nOracle Results:");
+        System.err.println("TRAIN\t1-best = "
+                + formatter.format(trainBest)
+                + "\t   -best = "
+                + formatter.format(oracleTrainBest));
+
+        System.err.println("DEV  \t1-best = "
+                + formatter.format(devBest)
+                + "\t" + devData.numRanks + "-best = "
+                + formatter.format(oracleDevBest));
+
+        System.err.println("TEST \t1-best = "
+                + formatter.format(testBest)
+                + "\t" + testData.numRanks + "-best = "
+                + formatter.format(oracleTestBest));
     }
 }

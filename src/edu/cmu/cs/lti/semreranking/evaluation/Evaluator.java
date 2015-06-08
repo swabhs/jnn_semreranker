@@ -6,15 +6,17 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
-import edu.cmu.cs.lti.semreranking.FrameSemanticParse;
-import edu.cmu.cs.lti.semreranking.Scored;
 import edu.cmu.cs.lti.semreranking.TestInstance;
+import edu.cmu.cs.lti.semreranking.TrainInstance;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
 public class Evaluator {
 
     public static double getRerankedMacroAvg(
             Map<Integer, TestInstance> instances,
             Map<Integer, Integer> bestRanks) {
+
         double avgf1 = 0.0;
         for (int ex : instances.keySet()) {
             TestInstance inst = instances.get(ex);
@@ -23,7 +25,7 @@ public class Evaluator {
         return avgf1 / instances.size();
     }
 
-    public static double getRerankedMicroAvg(
+    public static Result getRerankedMicroAvg(
             Map<Integer, TestInstance> instances,
             Map<Integer, Integer> bestRanks) {
 
@@ -46,8 +48,35 @@ public class Evaluator {
         double precision = pNumTotal / pDenomTotal;
         double recall = rNumTotal / rDenomTotal;
 
-        double fscore = 2.0 * precision * recall / (precision + recall);
-        return fscore;
+        double fscore = Result.getFscore(precision, recall);
+        return new Result(precision, recall, fscore);
+    }
+
+    public static Result getTrainRerankedMicroAvg(
+            List<TrainInstance> instances,
+            Map<Integer, Integer> bestRanks) {
+
+        double pNumTotal = 0.0;
+        double pDenomTotal = 0.0;
+
+        double rNumTotal = 0.0;
+        double rDenomTotal = 0.0;
+
+        for (int ex = 0; ex < instances.size(); ex++) {
+            Scored<FrameSemanticParse> fsp = instances.get(ex).kbestParses.get(bestRanks.get(ex));
+
+            pNumTotal += fsp.pNum;
+            pDenomTotal += fsp.pDenom;
+            rNumTotal += fsp.rNum;
+            rDenomTotal += fsp.rDenom;
+
+        }
+
+        double precision = pNumTotal / pDenomTotal;
+        double recall = rNumTotal / rDenomTotal;
+
+        double fscore = Result.getFscore(precision, recall);
+        return new Result(precision, recall, fscore);
     }
 
     public static void writeRerankedBest(

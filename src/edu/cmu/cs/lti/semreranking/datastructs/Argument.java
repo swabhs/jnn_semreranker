@@ -1,4 +1,4 @@
-package edu.cmu.cs.lti.semreranking;
+package edu.cmu.cs.lti.semreranking.datastructs;
 
 public class Argument {
     public String id;

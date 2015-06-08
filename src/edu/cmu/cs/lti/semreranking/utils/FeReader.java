@@ -9,18 +9,20 @@ import com.beust.jcommander.internal.Lists;
 import com.google.common.collect.Sets;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
-import edu.cmu.cs.lti.semreranking.Argument;
-import edu.cmu.cs.lti.semreranking.Frame;
-import edu.cmu.cs.lti.semreranking.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.Argument;
+import edu.cmu.cs.lti.semreranking.datastructs.Frame;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
 
 public class FeReader {
 
     private Set<String> frameIds;
     private Set<String> frameArgIds;
+    private Set<String> posTags;
 
     public FeReader() {
         this.frameIds = Sets.newHashSet();
         this.frameArgIds = Sets.newHashSet();
+        this.posTags = Sets.newHashSet();
     }
 
     public Set<String> getFrameIds() {
@@ -31,6 +33,10 @@ public class FeReader {
         return frameArgIds;
     }
 
+    public Set<String> getPosTags() {
+        return posTags;
+    }
+
     private void addFrameId(String frameId) {
         frameIds.add(frameId);
     }
@@ -39,18 +45,26 @@ public class FeReader {
         frameArgIds.add(frameArgId);
     }
 
+    private void addPosTag(String posTag) {
+        posTags.add(posTag);
+    }
+
     public Frame getFrameFromFeLine(String feLine) {
         String[] feToks = feLine.trim().split("\t");
 
         double frameScore = Double.parseDouble(feToks[1]);
+
         String frameId = feToks[3];
-        String predType = feToks[4];
-        String predToken = feToks[6];
         addFrameId(frameId);
 
-        String[] predToks = feToks[5].split("_");
-        int predStart = Integer.parseInt(predToks[0]);
-        int predEnd = predToks.length == 2 ? Integer.parseInt(predToks[1]) : predStart;
+        String predLexUnit = feToks[4];
+        addPosTag(predLexUnit.split("\\.")[1]);
+
+        String predToken = feToks[6];
+
+        String[] predPosToks = feToks[5].split("_");
+        int predStart = Integer.parseInt(predPosToks[0]);
+        int predEnd = predPosToks.length == 2 ? Integer.parseInt(predPosToks[1]) : predStart;
 
         // save the arguments or roles
         final int startArgToken = 8;
@@ -79,7 +93,7 @@ public class FeReader {
             }
         }
 
-        return new Frame(frameId, predStart, predEnd, predType, predToken, arguments, frameScore);
+        return new Frame(frameId, predStart, predEnd, predLexUnit, predToken, arguments, frameScore);
     }
 
     public Map<Integer, FrameSemanticParse> readFeFile(String feFileName) {
@@ -110,21 +124,4 @@ public class FeReader {
         return fsps;
     }
 
-    public static void main(String[] args) {
-        FeReader r = new FeReader();
-        String feFileName = "/Users/sswayamd/Documents/"
-
-                + "workspace/jnn/SemanticReranker/data/experiments/basic_tbps/output/" +
-                "semreranker_test/frameElements/99thBest.argid.predict.frame.elements";
-        Map<Integer, FrameSemanticParse> fsps = r.readFeFile(feFileName);
-        int total = 0;
-        for (int ex : fsps.keySet()) {
-            total += fsps.get(ex).numFrames;
-        }
-
-        fsps.get(1).print();
-        System.err.println(total);
-        List<String> feLines = BasicFileReader.readFile(feFileName);
-        System.err.println(feLines.size());
-    }
 }

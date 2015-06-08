@@ -1,4 +1,4 @@
-package edu.cmu.cs.lti.semreranking;
+package edu.cmu.cs.lti.semreranking.datastructs;
 
 import java.util.Set;
 
@@ -7,8 +7,9 @@ public class Frame {
     public final int predStartPos;
     public final int predEndPos;
 
-    public final String predType;
+    public final String lexicalUnit;
     public final String predToken;
+    public final String predPosTag;
 
     public Set<Argument> arguments;
     public final int numArgs;
@@ -19,15 +20,16 @@ public class Frame {
             String id,
             int predStartPos,
             int predEndPos,
-            String predType,
+            String lexicalUnit,
             String predToken,
             Set<Argument> arguments,
             double score) {
         this.id = id;
         this.predStartPos = predStartPos;
         this.predEndPos = predEndPos;
-        this.predType = predType;
+        this.lexicalUnit = lexicalUnit;
         this.predToken = predToken;
+        this.predPosTag = lexicalUnit.split("\\.")[1];
         this.arguments = arguments;
         this.score = score;
         this.numArgs = arguments.size();
@@ -59,7 +61,7 @@ public class Frame {
                 predPosBuilder.append("_");
             }
         }
-        builder.append(predType); // 4
+        builder.append(lexicalUnit); // 4
         builder.append("\t");
         builder.append(predPosBuilder.toString()); // 5
         builder.append("\t");

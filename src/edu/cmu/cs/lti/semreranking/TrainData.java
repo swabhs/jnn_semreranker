@@ -2,19 +2,16 @@ package edu.cmu.cs.lti.semreranking;
 
 import java.util.List;
 
-import edu.cmu.cs.lti.semreranking.jnn.FrameNetVocabs;
-
 public class TrainData {
     public List<TrainInstance> trainInstances;
-    // public List<DataInstance> testInstances;
-    public FrameNetVocabs vocabs;
+    public int totalUniqueFsps = 0;
 
-    public TrainData(
-            List<TrainInstance> instances,
-            // List<DataInstance> testInstances,
-            FrameNetVocabs vocabs) {
+    public TrainData(List<TrainInstance> instances) {
         this.trainInstances = instances;
-        // this.testInstances = testInstances;
-        this.vocabs = vocabs;
+
+        for (TrainInstance inst : instances) {
+            totalUniqueFsps += (inst.kbestParses.size());
+        }
+        System.err.println("Unique train instances: " + totalUniqueFsps);
     }
 }

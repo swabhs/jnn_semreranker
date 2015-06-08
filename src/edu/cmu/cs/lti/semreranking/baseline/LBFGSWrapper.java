@@ -8,7 +8,7 @@ import com.google.common.collect.Table;
 
 import edu.cmu.cs.lti.nlp.swabha.basic.Pair;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
-import edu.cmu.cs.lti.semreranking.baseline.riso.numerical.LBFGS;
+import edu.cmu.cs.lti.semreranking.baseline.riso.LBFGS;
 import edu.cmu.cs.lti.semreranking.utils.MathUtils;
 
 /**
@@ -41,7 +41,7 @@ public class LBFGSWrapper {
 
     public double[] trainAndSaveModel(
             double[] startingParams,
-            Features trainFeatures,
+            SimpleTrainData trainData,
             String modelFilePrefix,
             final int msId) throws Exception {
 
@@ -64,7 +64,7 @@ public class LBFGSWrapper {
         // System.err.println("initial log loss = " + initLoss);
         try {
             do {
-                Pair<double[], Double> valAndGrad = getGradientAndLoss(params, trainFeatures);
+                Pair<double[], Double> valAndGrad = getGradientAndLoss(params, trainData);
                 double loss = valAndGrad.second;
                 // System.err.println("iter = " + iter + " log loss = " + loss);
                 double[] gradients = valAndGrad.first;
@@ -99,22 +99,24 @@ public class LBFGSWrapper {
      * 
      * @param params
      *            vector of size S, containing the weight of the Sth feature.
-     * @param trainFeats
+     * @param trainData
      *            N X K X S matrix. May contain repetitions
      * @param lambda
      *            regularization constant
      * @return array of doubles which is the gradient for every parameter, value of loss function
      */
-    public Pair<double[], Double> getGradientAndLoss(double[] params, Features trainFeats) {
-        int N = trainFeats.numEx;
-        int K = trainFeats.numRanks;
+    public Pair<double[], Double> getGradientAndLoss(double[] params, SimpleTrainData trainData) {
+        int N = trainData.numEx;
+
         int S = params.length;
         Table<Integer, Integer, Double> dotProds = HashBasedTable.create();
         Map<Integer, Double> sumExpDotProd = Maps.newHashMap();
         for (int i = 0; i < N; i++) {
             sumExpDotProd.put(i, 0.0);
+            int K = trainData.trainInstances.get(i).numRanks;
             for (int k = 0; k < K; k++) {
-                double dp = MathUtils.dotProd(params, trainFeats.get(i, k));
+                double dp = MathUtils.dotProd(params,
+                        trainData.trainInstances.get(i).kBestParses.get(k).entity.synsemscore);
                 dotProds.put(i, k, dp);
                 sumExpDotProd.put(i, sumExpDotProd.get(i) + Math.exp(dp));
             }
@@ -124,11 +126,13 @@ public class LBFGSWrapper {
         for (int s = 0; s < S; s++) {
             grad[s] = lambda * params[s];
             for (int i = 0; i < N; i++) {
+                int K = trainData.trainInstances.get(i).numRanks;
                 for (int k = 0; k < K; k++) {
-                    grad[s] += Math.exp(dotProds.get(i, k)) * trainFeats.get(i, 0)[s];
+                    grad[s] += Math.exp(dotProds.get(i, k))
+                            * trainData.trainInstances.get(i).kBestParses.get(k).entity.synsemscore[s];
                 }
                 grad[s] /= sumExpDotProd.get(i);
-                grad[s] -= trainFeats.get(i, 0)[s];
+                grad[s] -= trainData.trainInstances.get(i).kBestParses.get(0).entity.synsemscore[s];
             }
         }
 
@@ -138,7 +142,6 @@ public class LBFGSWrapper {
         }
         return new Pair<double[], Double>(null, loss);
     }
-
     private static double calculateMachineEpsilon() {
         double machineEpsilon = 1.0;
         do {

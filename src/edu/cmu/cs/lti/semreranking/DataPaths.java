@@ -3,67 +3,36 @@ package edu.cmu.cs.lti.semreranking;
 public class DataPaths {
 
     public static final String SEMHOME = SemRerankerMain.semHome;
-    public static final String TOKEN_FILE_TRAIN = SEMHOME
-            + "/training/data/emnlp2015/semreranker.train.sentences.tokenized";
-    public static final String TOKEN_FILE_DEV = SEMHOME
-            + "/training/data/emnlp2015/semreranker.dev.sentences.tokenized";
-    public static final String TOKEN_FILE_TEST = SEMHOME
-            + "/training/data/emnlp2015/semreranker.test.sentences.tokenized";
+
+    public static final String WV_FILENAME = SEMHOME
+            + "/training/data/emnlp2015/" + SemRerankerMain.wvfile;
 
     public static final String XML_FILE_EXTN = "thBest.argid.predict.xml";
     public static final String FE_FILE_EXTN = "thBest.argid.predict.frame.elements";
+    public static final String TURBO_FILE_EXTN = "thBest.turboscores";
 
-    private String dataSet;
-    private String mini;
+    private String mini = "_mini";
 
     private String experimentsDir;
     public String xmlDir;
     public String feDir;
+    public String synDir;
 
-    public DataPaths(boolean useMini, boolean useSorted, String model) {
-        if (useSorted) {
-            dataSet = "semreranker_train_sorted";
-        } else {
-            dataSet = "semreranker_train";
-        }
+    public String conllFile;
 
-        if (useMini) {
-            mini = "_mini";
-        } else {
+    public DataPaths(boolean useMini, String dataSet) {
+        if (useMini == false) {
             mini = "";
         }
-        experimentsDir = SEMHOME + "experiments/" + model + "/";
+        experimentsDir = SEMHOME + "experiments/" + SemRerankerMain.model + "/";
 
-        xmlDir = experimentsDir + "results/" + dataSet + mini + "/partial/";
-        feDir = experimentsDir + "output/" + dataSet + mini + "/frameElements/";
+        xmlDir = experimentsDir + "results/semreranker_" + dataSet + mini + "/partial/";
+        feDir = experimentsDir + "output/semreranker_" + dataSet + mini + "/frameElements/";
+        synDir = SEMHOME + "/training/data/emnlp2015/semreranker." + dataSet + ".turboscores/";
+
+        conllFile = SEMHOME
+                + "/training/data/emnlp2015/semreranker." + dataSet
+                + ".sentences.turboparsed.basic.stanford.lemmatized.conll";
     }
 
-    /** for test data */
-    public DataPaths(boolean useMini, String model) {
-        dataSet = "semreranker_test";
-        if (useMini) {
-            mini = "_mini";
-        } else {
-            mini = "";
-        }
-
-        experimentsDir = SEMHOME + "experiments/" + model + "/";
-
-        xmlDir = experimentsDir + "results/" + dataSet + mini + "/partial/";
-        feDir = experimentsDir + "output/" + dataSet + mini + "/frameElements/";
-    }
-
-    public DataPaths(boolean useMini, String model, String dataSet) {
-        dataSet = "semreranker_dev";
-        if (useMini) {
-            mini = "_mini";
-        } else {
-            mini = "";
-        }
-
-        experimentsDir = SEMHOME + "experiments/" + model + "/";
-
-        xmlDir = experimentsDir + "results/" + dataSet + mini + "/partial/";
-        feDir = experimentsDir + "output/" + dataSet + mini + "/frameElements/";
-    }
 }
