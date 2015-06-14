@@ -1,11 +1,11 @@
 package edu.cmu.cs.lti.semreranking.utils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import com.beust.jcommander.internal.Lists;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
@@ -96,11 +96,11 @@ public class FeReader {
         return new Frame(frameId, predStart, predEnd, predLexUnit, predToken, arguments, frameScore);
     }
 
-    public Map<Integer, FrameSemanticParse> readFeFile(String feFileName) {
+    public Multimap<Integer, FrameSemanticParse> readFeFile(String feFileName) {
         List<String> feLines = BasicFileReader.readFile(feFileName);
 
         // map to example number
-        Map<Integer, FrameSemanticParse> fsps = new TreeMap<Integer, FrameSemanticParse>();
+        Multimap<Integer, FrameSemanticParse> exampleFspMap = HashMultimap.create();
         List<Frame> frames = Lists.newArrayList();
 
         int corpusSentNum = Integer.parseInt(feLines.get(0).trim().split("\t")[7]);
@@ -112,7 +112,7 @@ public class FeReader {
 
             if (corpusSentNum != prevSentNum) { // new Sentence
 
-                fsps.put(prevSentNum, new FrameSemanticParse(frames));
+                exampleFspMap.put(prevSentNum, new FrameSemanticParse(frames));
                 frames = Lists.newArrayList();
                 prevSentNum = corpusSentNum;
             }
@@ -120,8 +120,8 @@ public class FeReader {
             frames.add(getFrameFromFeLine(feLines.get(f)));
         }
 
-        fsps.put(corpusSentNum, new FrameSemanticParse(frames));
-        return fsps;
+        exampleFspMap.put(corpusSentNum, new FrameSemanticParse(frames));
+        return exampleFspMap;
     }
 
 }

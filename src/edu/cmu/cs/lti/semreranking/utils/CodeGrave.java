@@ -3,8 +3,9 @@ package edu.cmu.cs.lti.semreranking.utils;
 import java.io.File;
 import java.util.Map;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 
 import edu.cmu.cs.lti.semreranking.DataPaths;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
@@ -13,14 +14,14 @@ import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
 public class CodeGrave {
 
-    public static Table<Integer, Integer, Scored<FrameSemanticParse>> readScoredFsps(
+    public static Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> readScoredFsps(
             String xmlDir, String feDir, String synDir, FeReader reader) {
 
         System.err.println("Reading data from...");
         System.err.println(feDir);
         System.err.println(xmlDir);
 
-        Table<Integer, Integer, Scored<FrameSemanticParse>> allFsps = HashBasedTable.create();
+        Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> allFsps = Maps.newHashMap();
         int numRanks = new File(feDir).listFiles().length;
 
         for (int rank = 0; rank < numRanks; rank++) {
@@ -28,27 +29,28 @@ public class CodeGrave {
             String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
             String synFileName = synDir + rank + DataPaths.TURBO_FILE_EXTN;
 
-            Map<Integer, FrameSemanticParse> fsps = reader.readFeFile(feFileName);
+            Multimap<Integer, FrameSemanticParse> fsps = reader.readFeFile(feFileName);
             Map<Integer, FspScore> framescores = FileUtils.readFscoreFile(xmlFileName);
             Map<Integer, Double> synScores = FileUtils.readSynScoreFile(synFileName);
 
             for (int exNum : fsps.keySet()) {
-                Scored<FrameSemanticParse> scoFsp = null;
-                if (framescores.containsKey(exNum) == false) {
-                    scoFsp = new Scored<FrameSemanticParse>(
-                            fsps.get(exNum), 0.0, 0.0, 0.0, 0.0, synScores.get(exNum));
-                } else {
-                    scoFsp = new Scored<FrameSemanticParse>(
-                            fsps.get(exNum), framescores.get(exNum), synScores.get(exNum));
+                Multimap<Integer, Scored<FrameSemanticParse>> allRanks = HashMultimap.create();
+                for (FrameSemanticParse fsp : fsps.get(exNum)) {
+                    Scored<FrameSemanticParse> scoFsp = null;
+                    if (framescores.containsKey(exNum) == false) {
+                        scoFsp = new Scored<FrameSemanticParse>(
+                                fsp, new FspScore(), synScores.get(exNum), rank);
+                    } else {
+                        scoFsp = new Scored<FrameSemanticParse>(
+                                fsp, framescores.get(exNum), synScores.get(exNum), rank);
+                    }
+                    allRanks.put(rank, scoFsp);
                 }
-                allFsps.put(exNum, rank, scoFsp);
-
+                allFsps.put(exNum, allRanks);
             }
         }
 
-        System.err.println("Number of examples read = " + allFsps.rowKeySet().size());
-        System.err
-                .println("Number of ranked parses per example = " + allFsps.columnKeySet().size());
+        System.err.println("Number of examples read = " + allFsps.keySet().size());
         return allFsps;
     }
 

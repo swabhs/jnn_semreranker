@@ -42,4 +42,26 @@ public class FrameSemanticParse {
         }
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        FrameSemanticParse other = (FrameSemanticParse) obj;
+        if (frames == null) {
+            if (other.frames != null)
+                return false;
+        } else if (!frames.equals(other.frames))
+            return false;
+        if (numFrameArgs != other.numFrameArgs)
+            return false;
+        if (numFrames != other.numFrames)
+            return false;
+
+        return true;
+    }
+
 }

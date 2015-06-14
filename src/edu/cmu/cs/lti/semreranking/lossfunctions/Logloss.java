@@ -1,61 +1,63 @@
 package edu.cmu.cs.lti.semreranking.lossfunctions;
 
-import java.util.List;
+import java.util.Map;
 
 import jnn.neuron.DenseNeuronArray;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Table;
-
 import edu.cmu.cs.lti.semreranking.TrainInstance;
-import edu.cmu.cs.lti.semreranking.utils.MathUtils;
 
-public class LogLoss {
+public class LogLoss extends Loss {
 
-    public static double getLoss(
-            Table<Integer, Integer, DenseNeuronArray> scores,
-            List<TrainInstance> instances) {
+    @Override
+    public double getLoss(
+            Map<Integer, DenseNeuronArray> rankScoreMap, TrainInstance instance) {
+        int numRanks = instance.numUniqueParses;
 
-        int numRanks = scores.columnKeySet().size();
-
-        double loss = 0.0;
-        for (int ex : scores.rowKeySet()) {
-            double errorAtTop = scores.get(ex, 0).getNeuron(0);
-
-            double dotProducts[] = new double[numRanks];
-            double partition = 0.0;
-            for (int rank = 0; rank < numRanks; rank++) {
-                double errorAtRank = scores.get(ex, rank).getNeuron(0);
-
-                dotProducts[rank] = Math.exp(errorAtRank);
-                partition += dotProducts[rank];
-
-                scores.get(ex, rank).addError(0, errorAtRank - errorAtTop);
+        double partition = 0.0;
+        double highestScore = Double.NEGATIVE_INFINITY;
+        for (int k = 0; k < numRanks; k++) {
+            partition += Math.exp(rankScoreMap.get(k).getNeuron(0));
+            if (rankScoreMap.get(k).getNeuron(0) > highestScore) {
+                highestScore = rankScoreMap.get(k).getNeuron(0);
             }
-
-            loss -= dotProducts[0] / partition;
         }
 
+        double probFirst = rankScoreMap.get(0).getNeuron(0) / partition;
+        if (rankScoreMap.get(0).getNeuron(0) < highestScore || probFirst < 0.5) {
+            double firstGrad = -1.0 + Math.exp(rankScoreMap.get(0).getNeuron(0)) / partition;
+            rankScoreMap.get(0).addError(0, -firstGrad);
+
+            for (int k = 1; k < numRanks; k++) {
+                double grad = Math.exp(rankScoreMap.get(k).getNeuron(0)) / partition;
+                rankScoreMap.get(k).addError(0, -grad);
+            }
+        }
+
+        double loss = -rankScoreMap.get(0).getNeuron(0) + Math.log(partition);
         return loss;
     }
 
-    public static double getSmartLoss(Table<Integer, Integer, DenseNeuronArray> scores,
-            List<TrainInstance> instances) {
-        int numRanks = scores.columnKeySet().size();
-
-        double loss = 0.0;
-        for (int ex : scores.rowKeySet()) {
-            List<Double> dotProds = Lists.newArrayList();
-
-            for (int rank = 0; rank < numRanks; rank++) {
-                dotProds.add(scores.get(ex, rank).getNeuron(0));
-                scores.get(ex, rank).addError(0, -dotProds.get(rank) + dotProds.get(0));
-            }
-
-            double partition = MathUtils.logSum(dotProds);
-
-            loss -= dotProds.get(0) - partition;
-        }
-        return loss;
+    public int getNumComparisons(int numParses) {
+        return 1;
     }
+
+    // public static double getLossOld(Table<Integer, Integer, DenseNeuronArray> scores,
+    // List<TrainInstance> instances) {
+    // int numRanks = scores.columnKeySet().size();
+    //
+    // double loss = 0.0;
+    // for (int ex : scores.rowKeySet()) {
+    // List<Double> dotProds = Lists.newArrayList();
+    //
+    // for (int rank = 0; rank < numRanks; rank++) {
+    // dotProds.add(scores.get(ex, rank).getNeuron(0));
+    // scores.get(ex, rank).addError(0, -dotProds.get(rank) + dotProds.get(0));
+    // }
+    //
+    // double partition = MathUtils.logSum(dotProds);
+    //
+    // loss -= dotProds.get(0) - partition;
+    // }
+    // return loss;
+    // }
+
 }

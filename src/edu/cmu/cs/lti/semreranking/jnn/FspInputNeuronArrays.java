@@ -11,7 +11,7 @@ import edu.cmu.cs.lti.semreranking.utils.StringUtils;
 
 public class FspInputNeuronArrays {
 
-    public DenseNeuronArray[] posArray;
+    // public DenseNeuronArray[] posArray;
     public DenseNeuronArray[] frameIdsArray;
     public DenseNeuronArray[] frameArgIdsArray;
 
@@ -21,7 +21,7 @@ public class FspInputNeuronArrays {
         int numFrames = scoredFsp.entity.numFrames;
         int numArgs = scoredFsp.entity.numFrameArgs;
 
-        posArray = DenseNeuronArray.asArray(numFrames, ap.tokenInpDim);
+        // posArray = DenseNeuronArray.asArray(numFrames, ap.tokenInpDim);
         frameIdsArray = DenseNeuronArray.asArray(numFrames, ap.frameIdInpDim);
         frameArgIdsArray = DenseNeuronArray.asArray(numArgs, ap.frameArgInpDim);
 
@@ -35,7 +35,7 @@ public class FspInputNeuronArrays {
         for (Frame frame : scoredFsp.entity.frames) {
             frameIdsArray[i].setName(frame.id);
             frameIds[i] = frame.id;
-            posArray[i].setName("pos" + frame.id);
+            // posArray[i].setName("pos" + frame.id);
             predPostags[i] = frame.predPosTag;
 
             for (Argument arg : frame.arguments) {
@@ -48,9 +48,9 @@ public class FspInputNeuronArrays {
         }
 
         /* adding all pos tags to inference */
-        inference.addNeurons(posArray);
-        inference.addMapping(new OutputMappingStringArrayToDenseArray(predPostags, posArray,
-                lookupTables.goldFNPosTable));
+        // inference.addNeurons(posArray);
+        // inference.addMapping(new OutputMappingStringArrayToDenseArray(predPostags, posArray,
+        // lookupTables.goldFNPosTable));
 
         /* adding all inputs to inference */
         inference.addNeurons(frameIdsArray);

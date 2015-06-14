@@ -8,9 +8,8 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.collect.TreeMultiset;
 
 import edu.cmu.cs.lti.semreranking.TestData;
 import edu.cmu.cs.lti.semreranking.TestInstance;
@@ -20,7 +19,10 @@ import edu.cmu.cs.lti.semreranking.datastructs.Argument;
 import edu.cmu.cs.lti.semreranking.datastructs.Frame;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameNetVocabs;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FspScore;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
+import edu.cmu.cs.lti.semreranking.lossfunctions.PairwiseLoss;
+import edu.cmu.cs.lti.semreranking.utils.FileUtils.ReadData;
 import edu.cmu.cs.lti.semreranking.utils.StringUtils;
 
 public class FspRerankerAppTest {
@@ -62,35 +64,39 @@ public class FspRerankerAppTest {
         FrameSemanticParse fsp1 = new FrameSemanticParse(Arrays.asList(frame1, frame2, frame3));
         FrameSemanticParse fsp2 = new FrameSemanticParse(Arrays.asList(frame1, frame4, frame3));
         FrameSemanticParse fsp3 = new FrameSemanticParse(Arrays.asList(frame1, frame2, frame5));
-        Scored<FrameSemanticParse> scored1 = new Scored<FrameSemanticParse>(fsp1, 5, 5, 5, 5, 20.0);
-        Scored<FrameSemanticParse> scored2 = new Scored<FrameSemanticParse>(fsp2, 4, 5, 4, 5, 20.0);
-        Scored<FrameSemanticParse> scored3 = new Scored<FrameSemanticParse>(fsp3, 4, 5, 4, 5, 20.0);
+        Scored<FrameSemanticParse> scored1 = new Scored<FrameSemanticParse>(fsp1, new FspScore(5,
+                5, 5, 5), 20.0, 1);
+        Scored<FrameSemanticParse> scored2 = new Scored<FrameSemanticParse>(fsp2, new FspScore(4,
+                5, 4, 5), 20.0, 2);
+        Scored<FrameSemanticParse> scored3 = new Scored<FrameSemanticParse>(fsp3, new FspScore(4,
+                5, 4, 5), 20.0, 3);
 
-        TreeMultiset<Scored<FrameSemanticParse>> sortedParses = TreeMultiset.create();
+        List<Scored<FrameSemanticParse>> sortedParses = Lists.newArrayList();
         sortedParses.add(scored1);
         sortedParses.add(scored2);
         sortedParses.add(scored3);
         TrainInstance instance = new TrainInstance(tokens, posTags, sortedParses);
         FrameNetVocabs vocabs = new FrameNetVocabs(
-                Sets.newHashSet(tokens), Sets.newHashSet(posTags), Sets.newHashSet("n", "v"),
+                Sets.newHashSet(tokens), Sets.newHashSet(posTags),
                 frameIds, argIds);
-        trainData = new TrainData(Arrays.asList(instance));
+        trainData = new TrainData(Arrays.asList(instance), sortedParses.size());
 
-        List<Scored<FrameSemanticParse>> unsortedParses = Arrays.asList(scored2, scored1, scored3);
+        List<Scored<FrameSemanticParse>> unsortedParses = Arrays.asList(scored2, scored3, scored1);
         TestInstance testInst = new TestInstance(tokens, posTags, unsortedParses);
-        Map<Integer, TestInstance> testInstances = Maps.newHashMap();
-        testInstances.put(0, testInst);
-        testData = new TestData(testInstances);
+        List<TestInstance> testInstances = Lists.newArrayList();
+        testInstances.add(0, testInst);
+        testData = new TestData(testInstances, sortedParses.size());
 
-        devData = new TestData(testInstances);
-        reranker = new FspRerankerApp(trainData, testData, devData, vocabs);
+        devData = new TestData(testInstances, sortedParses.size());
+        reranker = new FspRerankerApp(new ReadData(trainData, testData, devData, vocabs),
+                new PairwiseLoss());
     }
 
     @Test
     public void testDoDeepDecoding() {
-        Map<Integer, Integer> result = reranker.doDeepDecoding(testData);
+        Map<Integer, Scored<FrameSemanticParse>> result = reranker.doDeepDecoding(testData);
         for (int ex : result.keySet()) {
-            System.err.println(ex + "\t" + result.get(ex));
+            System.err.println(ex + "\t" + result.get(ex).toString());
         }
     }
 

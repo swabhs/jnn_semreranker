@@ -1,37 +1,61 @@
 package edu.cmu.cs.lti.semreranking;
 
-import java.util.Map;
+import java.util.List;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.TreeMultiset;
 
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
 public class TrainInstance extends DataInstance {
 
-    public Map<Integer, Scored<FrameSemanticParse>> kbestParses;
+    /* parses ranked by SEMAFOR gold f-score */
+    final private TreeMap<Integer, Scored<FrameSemanticParse>> goldRankParseMap;
 
-    public TrainInstance(
-            String[] tokens,
-            String[] posTags,
-            TreeMultiset<Scored<FrameSemanticParse>> sortedParses) {
-        super(sortedParses.size(), tokens, posTags);
+    /* parses ranked by syntactic score */
+    final private TreeMap<Integer, Scored<FrameSemanticParse>> rankParseMap;
 
-        this.kbestParses = Maps.newHashMap();
+    public TrainInstance(String[] tokens, String[] posTags, List<Scored<FrameSemanticParse>> parses) {
+        super(parses.size(), tokens, posTags);
+
+        this.rankParseMap = Maps.newTreeMap();
         int rank = 0;
-        for (Scored<FrameSemanticParse> parse : sortedParses.elementSet()) {
-            kbestParses.put(rank, parse);
+        for (Scored<FrameSemanticParse> parse : parses) {
+            rankParseMap.put(rank, parse);
             rank++;
         }
-        this.numParses = kbestParses.size();
+
+        /* sorting the parses by gold f-score */
+        TreeSet<Scored<FrameSemanticParse>> kbestParses = new TreeSet<Scored<FrameSemanticParse>>();
+        kbestParses.addAll(parses);
+
+        this.goldRankParseMap = Maps.newTreeMap();
+        int goldRank = 0;
+        for (Scored<FrameSemanticParse> parse : kbestParses) {
+            parse.origRank = goldRank; // for debugging purposes, TODO: remove?
+            goldRankParseMap.put(goldRank, parse);
+            goldRank++;
+        }
+
+        this.numUniqueParses = kbestParses.size();
     }
 
-    public FrameSemanticParse getParseAtRank(int rank) {
-        return kbestParses.get(rank).entity;
+    @Override
+    public Scored<FrameSemanticParse> getParseAtRank(int goldRank) {
+        return goldRankParseMap.get(goldRank);
     }
 
-    public double getFscoreAtRank(int rank) {
-        return kbestParses.get(rank).fscore;
+    public double getFscoreAtRank(int goldRank) {
+        if (goldRankParseMap.containsKey(goldRank) == false) {
+            throw new IllegalArgumentException("rank not present!");
+        }
+        return goldRankParseMap.get(goldRank).fscore;
     }
+
+    public Scored<FrameSemanticParse> getUnsortedParseAtRank(int rank) {
+        return rankParseMap.get(rank);
+    }
+
 }

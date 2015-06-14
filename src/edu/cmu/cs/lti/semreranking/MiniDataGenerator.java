@@ -9,7 +9,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Maps;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Table;
+import com.google.common.collect.Multimap;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
@@ -43,7 +43,7 @@ public class MiniDataGenerator {
     public static NumberFormat formatter = new DecimalFormat("#0.00000");
 
     static void makeMiniDataSet(
-            Table<Integer, Integer, Scored<FrameSemanticParse>> allFsps,
+            Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> allFsps,
             String feDir,
             String xmlDir,
             int numExamples,
@@ -61,18 +61,26 @@ public class MiniDataGenerator {
             fscoreLines.add("Sentence ID\tFscore\tFscore\tFscore");
 
             int exNum = 0;
-            for (Integer row : allFsps.rowKeySet()) {
-                if (allFsps.contains(row, col)) {
-                    Scored<FrameSemanticParse> instance = allFsps.get(row, col);
-                    feLines.add(instance.entity.toString(row));
-                    fscoreLines.add(row + "\t"
-                            + formatter.format(instance.rNum / instance.rDenom) + "("
-                            + (instance.rNum) + "/"
-                            + (instance.rDenom) + ")\t"
-                            + formatter.format(instance.pNum / instance.pDenom) + "("
-                            + (instance.pNum) + "/"
-                            + (instance.pDenom) + ")\t"
-                            + instance.fscore);
+            for (Integer row : allFsps.keySet()) {
+                if (allFsps.get(row).containsKey(col)) {
+                    for (Scored<FrameSemanticParse> scoFsp : allFsps.get(row).get(col)) {
+                        feLines.add(scoFsp.entity.toString(row));
+                        // TODO: BUGS AHOY, division by a possible 0.0
+                        fscoreLines.add(row
+                                + "\t"
+                                + formatter.format(scoFsp.detailedFspScore.rnum
+                                        / scoFsp.detailedFspScore.rdenom)
+                                + "("
+                                + (scoFsp.detailedFspScore.rnum)
+                                + "/"
+                                + (scoFsp.detailedFspScore.rdenom)
+                                + ")\t"
+                                + formatter.format(scoFsp.detailedFspScore.pnum
+                                        / scoFsp.detailedFspScore.pdenom) + "("
+                                + (scoFsp.detailedFspScore.pnum) + "/"
+                                + (scoFsp.detailedFspScore.pdenom) + ")\t"
+                                + scoFsp.fscore);
+                    }
                     exNum++;
                 }
                 if (exNum == numExamples) {
@@ -96,7 +104,7 @@ public class MiniDataGenerator {
         for (String dataset : dataSetSizes.keySet()) {
 
             DataPaths paths = new DataPaths(false, dataset);
-            Table<Integer, Integer, Scored<FrameSemanticParse>> unsorted = CodeGrave
+            Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> unsorted = CodeGrave
                     .readScoredFsps(paths.xmlDir, paths.feDir, paths.synDir, new FeReader());
 
             DataPaths outpaths = new DataPaths(true, dataset);

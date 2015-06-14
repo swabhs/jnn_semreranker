@@ -77,4 +77,50 @@ public class Frame {
 
         return builder.toString();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Frame other = (Frame) obj;
+        if (arguments == null) {
+            if (other.arguments != null)
+                return false;
+        } else if (!arguments.equals(other.arguments))
+            return false;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        if (lexicalUnit == null) {
+            if (other.lexicalUnit != null)
+                return false;
+        } else if (!lexicalUnit.equals(other.lexicalUnit))
+            return false;
+        if (numArgs != other.numArgs)
+            return false;
+        if (predEndPos != other.predEndPos)
+            return false;
+        if (predPosTag == null) {
+            if (other.predPosTag != null)
+                return false;
+        } else if (!predPosTag.equals(other.predPosTag))
+            return false;
+        if (predStartPos != other.predStartPos)
+            return false;
+        if (predToken == null) {
+            if (other.predToken != null)
+                return false;
+        } else if (!predToken.equals(other.predToken))
+            return false;
+        if (Double.doubleToLongBits(score) != Double.doubleToLongBits(other.score))
+            return false;
+        return true;
+    }
+
 }

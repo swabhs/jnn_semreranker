@@ -10,10 +10,13 @@ public class Result implements Comparable<Result> {
     public double rec;
     public Double f1;
 
-    public Result(double prec, double rec, double f1) {
+    public double macroF1;
+
+    public Result(double prec, double rec, double f1, double macroF1) {
         this.pre = prec;
         this.rec = rec;
         this.f1 = f1;
+        this.macroF1 = macroF1;
     }
 
     public Result() {
@@ -27,11 +30,12 @@ public class Result implements Comparable<Result> {
         return f1.compareTo(o.f1);
     }
 
-    public void print() {
+    @Override
+    public String toString() {
         NumberFormat formatter = SemRerankerMain.formatter;
-        System.err.println("P: " + formatter.format(pre)
+        return "P: " + formatter.format(pre)
                 + "\tR: " + formatter.format(rec)
-                + "\tF1: " + formatter.format(f1));
+                + "\tF1: " + formatter.format(f1);
     }
 
     public static double getFscore(double precision, double recall) {
