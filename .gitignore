@@ -3,6 +3,8 @@
 /bin/
 target/
 data/
+models/
+logs/
 
 # OS Files #
 .DS_Store
@@ -20,7 +22,8 @@ data/
 *.war
 *.ear
 *.db
-
+*.model
+*err
 ######################
 # Windows
 ######################
