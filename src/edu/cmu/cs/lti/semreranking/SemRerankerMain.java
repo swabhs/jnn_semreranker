@@ -17,7 +17,7 @@ import edu.cmu.cs.lti.semreranking.evaluation.Oracle;
 import edu.cmu.cs.lti.semreranking.jnn.FspRerankerApp;
 import edu.cmu.cs.lti.semreranking.lossfunctions.LogLoss;
 import edu.cmu.cs.lti.semreranking.utils.FileUtils;
-import edu.cmu.cs.lti.semreranking.utils.FileUtils.ReadData;
+import edu.cmu.cs.lti.semreranking.utils.FileUtils.AllRerankingData;
 
 /**
  * Sentences with no frames are basically not read as a FrameSemanticParse.
@@ -44,18 +44,18 @@ public class SemRerankerMain {
     public static boolean usePretrained = true;
 
     @Parameter(names = "-dim", description = "size of param representation")
-    public static int paramDim = 100; // TODO: does not have be the size of all params, need to
-                                      // separate this from inputDim
+    public static int paramDim = 50; // TODO: does not have be the size of all params, need to
+                                     // separate this from inputDim
 
     @Parameter(names = "-useInitModel", arity = 1, description = "use AdaDelta for learning")
-    public static boolean useInitModel = false;
+    public static boolean useInitModel = true;
     @Parameter(names = "-initmodel", description = "initial model")
     public static String initmodel = "models/bestinit.model"; // TODO: does not have be the size of
                                                               // all params, need to
     // separate this from inputDim
 
     @Parameter(names = "-numIter", description = "number of iterations of SGD/Adadelta/Adagrad")
-    public static int numIter = 100;
+    public static int numIter = 200;
 
     @Parameter(names = "-learnrate", description = "size of param representation")
     public static double learningRate = 0.001;
@@ -64,7 +64,7 @@ public class SemRerankerMain {
     public static double l2 = 0.00;
 
     @Parameter(names = "-adadelta", arity = 1, description = "use AdaDelta for learning")
-    public static boolean useAdadelta = false;
+    public static boolean useAdadelta = true;
 
     @Parameter(names = "-adagrad", arity = 1, description = "use AdaGrad for learning")
     public static boolean useAdagrad = false;
@@ -83,7 +83,7 @@ public class SemRerankerMain {
         GlobalParameters.useAdagradDefault = useAdagrad;
         GlobalParameters.l2regularizerLambdaDefault = l2;
 
-        ReadData allData = FileUtils.readAllRerankingingData(useMini);
+        AllRerankingData allData = FileUtils.readAllRerankingingData(useMini);
         FrameNetVocabs vocabs = allData.vocabs;
 
         System.err.println("\n\nVocab Stats:");
@@ -103,7 +103,7 @@ public class SemRerankerMain {
         printOracle(allData);
     }
 
-    static void printOracle(ReadData allData) {
+    static void printOracle(AllRerankingData allData) {
         TrainData trainData = allData.trainData;
         TestData testData = allData.testData;
         TestData devData = allData.devData;

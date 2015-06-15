@@ -22,7 +22,7 @@ import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
 import edu.cmu.cs.lti.semreranking.datastructs.FspScore;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.lossfunctions.PairwiseLoss;
-import edu.cmu.cs.lti.semreranking.utils.FileUtils.ReadData;
+import edu.cmu.cs.lti.semreranking.utils.FileUtils.AllRerankingData;
 import edu.cmu.cs.lti.semreranking.utils.StringUtils;
 
 public class FspRerankerAppTest {
@@ -88,7 +88,7 @@ public class FspRerankerAppTest {
         testData = new TestData(testInstances, sortedParses.size());
 
         devData = new TestData(testInstances, sortedParses.size());
-        reranker = new FspRerankerApp(new ReadData(trainData, testData, devData, vocabs),
+        reranker = new FspRerankerApp(new AllRerankingData(trainData, testData, devData, vocabs),
                 new PairwiseLoss());
     }
 

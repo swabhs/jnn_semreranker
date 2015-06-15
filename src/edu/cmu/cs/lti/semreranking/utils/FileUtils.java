@@ -27,7 +27,7 @@ import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
 public class FileUtils {
 
-    public static class ReadData {
+    public static class AllRerankingData {
 
         public TrainData trainData;
         public TestData testData;
@@ -35,7 +35,7 @@ public class FileUtils {
 
         public FrameNetVocabs vocabs;
 
-        public ReadData(TrainData trainData, TestData testData, TestData devData,
+        public AllRerankingData(TrainData trainData, TestData testData, TestData devData,
                 FrameNetVocabs vocabs) {
             this.trainData = trainData;
             this.testData = testData;
@@ -45,7 +45,7 @@ public class FileUtils {
         }
     }
 
-    public static ReadData readAllRerankingingData(boolean useMini) {
+    public static AllRerankingData readAllRerankingingData(boolean useMini) {
 
         FeReader reader = new FeReader();
         Set<String> tokensVocab = Sets.newHashSet();
@@ -123,7 +123,7 @@ public class FileUtils {
                 // reader.getPosTags(),
                 reader.getFrameIds(),
                 reader.getFrameArgIds());
-        return new ReadData(
+        return new AllRerankingData(
                 new TrainData(instances, numTrainRanks),
                 new TestData(testInstances, numTestRanks),
                 new TestData(devInstances, numDevRanks),

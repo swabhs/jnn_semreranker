@@ -24,7 +24,7 @@ import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.evaluation.Evaluator;
 import edu.cmu.cs.lti.semreranking.evaluation.Result;
 import edu.cmu.cs.lti.semreranking.lossfunctions.Loss;
-import edu.cmu.cs.lti.semreranking.utils.FileUtils.ReadData;
+import edu.cmu.cs.lti.semreranking.utils.FileUtils.AllRerankingData;
 
 public class FspRerankerApp {
 
@@ -37,7 +37,7 @@ public class FspRerankerApp {
 
     private NumberFormat formatter = SemRerankerMain.formatter;
 
-    public FspRerankerApp(ReadData allData, Loss loss) {
+    public FspRerankerApp(AllRerankingData allData, Loss loss) {
         ap = new ArrayParams(SemRerankerMain.paramDim);
 
         if (SemRerankerMain.useInitModel) {
@@ -95,11 +95,11 @@ public class FspRerankerApp {
                 inference.backward();
 
                 if (exNum == trainData.trainInstances.size() - 1 || exNum % batchSize == 0) {
-                    // inference.commit(0);
-                    network.update();
-                    lookupTables.posTable.updateWeights(0.0, 0.0);
-                    lookupTables.frameArgTable.updateWeights(0.0, 0.0);
-                    lookupTables.frameTable.updateWeights(0.0, 0.0);
+                    inference.commit(0);
+                    // network.update();
+                    // lookupTables.posTable.updateWeights(0.0, 0.0);
+                    // lookupTables.frameArgTable.updateWeights(0.0, 0.0);
+                    // lookupTables.frameTable.updateWeights(0.0, 0.0);
                 }
 
             }
