@@ -21,7 +21,6 @@ public class Argument {
         builder.append("\t");
         builder.append(start);
         if (start != end) {
-
             builder.append(":");
             builder.append(end);
         }

@@ -38,7 +38,7 @@ public class FspRerankerApp {
     private NumberFormat formatter = SemRerankerMain.formatter;
 
     public FspRerankerApp(AllRerankingData allData, Loss loss) {
-        ap = new ArrayParams(SemRerankerMain.paramDim);
+        ap = new ArrayParams(SemRerankerMain.paramDim, SemRerankerMain.dimFile);
 
         if (SemRerankerMain.useInitModel) {
             network = new FspNetworks(SemRerankerMain.initmodel);
@@ -58,11 +58,11 @@ public class FspRerankerApp {
     /** Algorithm */
     void doDeepLearning(TrainData trainData, TestData testData, TestData devData, Loss loss) {
         Result bestTestEval = new Result();
-        Result bestTrainEval = new Result();
+        Result bestDevEval = new Result();
 
         for (int epoch = 0; epoch < maxEpochs; epoch++) {
             double totalLoss = 0.0;
-            double avgRank = 0.0;
+            // double avgRank = 0.0;
             System.err.print("it = " + epoch + "\t");
 
             for (int exNum = 0; exNum < trainData.size; exNum++) {
@@ -91,7 +91,7 @@ public class FspRerankerApp {
                 inference.forward();
 
                 totalLoss += loss.getLoss(goldRankScoreMap, trainInst);
-                avgRank += loss.getPredictedTrainRankOfBestParse(goldRankScoreMap);
+                // avgRank += loss.getPredictedTrainRankOfBestParse(goldRankScoreMap);
                 inference.backward();
 
                 if (exNum == trainData.trainInstances.size() - 1 || exNum % batchSize == 0) {
@@ -101,30 +101,28 @@ public class FspRerankerApp {
                     // lookupTables.frameArgTable.updateWeights(0.0, 0.0);
                     // lookupTables.frameTable.updateWeights(0.0, 0.0);
                 }
-
             }
 
             System.err.print("loss = " + formatter.format(totalLoss) + "\t");
-            System.err.print("avgrank = " + formatter.format(avgRank / trainData.size) + "\t");
+            // System.err.print("avgrank = " + formatter.format(avgRank / trainData.size) + "\t");
 
             Map<Integer, Scored<FrameSemanticParse>> bestTrainRanks = doDeepDecoding(trainData);
             Result trainEval = Evaluator.getRerankedMicroAvg(bestTrainRanks);
-            System.err.print("train : " + trainEval.toString() + "\t");
+            System.err.print("train = " + formatter.format(trainEval.f1) + "\t");
 
-            // Map<Integer, Scored<FrameSemanticParse>> bestTestRanks = doDeepDecoding(testData);
-            // Result testEval = Evaluator.getRerankedMicroAvg(bestTestRanks);
-            // System.err.print("test = " + formatter.format(testEval.f1) + "\t");
+            Map<Integer, Scored<FrameSemanticParse>> bestDevRanks = doDeepDecoding(devData);
+            Result devEval = Evaluator.getRerankedMicroAvg(bestDevRanks);
+            System.err.print("dev = " + formatter.format(devEval.f1) + "\t");
 
-            // Map<Integer, Scored<FrameSemanticParse>> bestDevRanks = doDeepDecoding(devData);
-            // Result devEval = Evaluator.getRerankedMicroAvg(bestDevRanks);
-            // System.err.print("dev = " + formatter.format(devEval.f1) + "\t");
+            // System.err.println();
 
-            System.err.println();
+            if (devEval.compareTo(bestDevEval) > 0) {
+                bestDevEval = devEval;
+                Map<Integer, Scored<FrameSemanticParse>> bestTestRanks = doDeepDecoding(testData);
+                Result testEval = Evaluator.getRerankedMicroAvg(bestTestRanks);
+                System.err.print("test = " + formatter.format(testEval.f1) + "\t");
 
-            if (trainEval.compareTo(bestTrainEval) > 0) {
-                // bestTestEval = testEval;
-                bestTrainEval = trainEval;
-                System.err.println("Writing down model for iteration " + epoch);
+                System.err.println("\nWriting down model for iteration " + epoch);
                 network.saveAllParams("models/semrerank.epoch" + epoch + ".model");
             }
             Evaluator.writeRerankedBest(bestTrainRanks,
@@ -157,7 +155,6 @@ public class FspRerankerApp {
             DenseNeuronArray frameLinear = new DenseNeuronArray(ap.frameResultDim);
             frameLinear.setName("frame linear");
             inference.addNeurons(frameLinear);
-
             for (int pos = frame.predStartPos; pos <= frame.predEndPos; pos++) {
                 inference.addMapping(new OutputMappingDenseToDense(
                         tokenInpArray[pos], frameLinear, network.tokenLayer));
@@ -170,7 +167,8 @@ public class FspRerankerApp {
 
             inference.addMapping(new OutputMappingDenseToDense(
                     inp.frameIdsArray[i], frameLinear, network.frameLayer));
-
+            // DenseNeuronArray[] argnonlineararray = new DenseNeuronArray[frame.arguments.size()];
+            // int z = 0;
             for (Argument arg : frame.arguments) {
 
                 DenseNeuronArray argLinear = new DenseNeuronArray(ap.argResultDim);
@@ -195,10 +193,10 @@ public class FspRerankerApp {
                     if (prev < 0) {
                         break;
                     }
+                    // inference.addMapping(new OutputMappingDenseToDense(
+                    // tokenInpArray[prev], argLinear, network.tokenLayer));
                     inference.addMapping(new OutputMappingDenseToDense(
-                            tokenInpArray[prev], argLinear, network.tokenLayer));
-                    inference.addMapping(new OutputMappingDenseToDense(
-                            prevPosInpArray[prev], argLinear, network.posLayer));
+                            prevPosInpArray[prev], argLinear, network.prevPosLayer));
                 }
 
                 // adding window of 2 next tokens/pos tags
@@ -206,10 +204,10 @@ public class FspRerankerApp {
                     if (next >= tokenInpArray.length) {
                         break;
                     }
+                    // inference.addMapping(new OutputMappingDenseToDense(
+                    // tokenInpArray[next], argLinear, network.tokenLayer));
                     inference.addMapping(new OutputMappingDenseToDense(
-                            tokenInpArray[next], argLinear, network.tokenLayer));
-                    inference.addMapping(new OutputMappingDenseToDense(
-                            nextPosInpArray[next], argLinear, network.posLayer));
+                            nextPosInpArray[next], argLinear, network.nextPosLayer));
                 }
 
                 DenseNeuronArray spanSize = getSpanSizeBins(arg.end - arg.start);
@@ -226,7 +224,18 @@ public class FspRerankerApp {
                 inference.addMapping(new OutputMappingDenseToDense(
                         argNonlinear, frameLinear, network.allArgsLayer));
                 j++;
+
+                // argnonlineararray[z] = new DenseNeuronArray(ap.argResultDim);
+                // inference.addNeurons(argnonlineararray[z]);
+                // inference.addMapping(new OutputMappingDenseToDense(argLinear,
+                // argnonlineararray[z],
+                // LogisticSigmoidLayer.singleton));
+                // z++;
             }
+
+            // inference.addMapping(new OutputMappingDenseArrayToDense(argnonlineararray,
+            // frameLinear,
+            // network.argumentCombiner));
 
             DenseNeuronArray numArgs = getNumArgsBins(frame.numArgs);
             inference.addNeurons(numArgs);
@@ -294,9 +303,9 @@ public class FspRerankerApp {
 
             GraphInference inference = new GraphInference(0, false);
             DenseNeuronArray[] tokenInpArray = getInputsFromTokens(inference, instance);
-            DenseNeuronArray[] posInpArray = getInputsFromTokens(inference, instance);
-            DenseNeuronArray[] prevPosInpArray = getInputsFromTokens(inference, instance);
-            DenseNeuronArray[] nextPosInpArray = getInputsFromTokens(inference, instance);
+            DenseNeuronArray[] posInpArray = getInputsFromPosTags(inference, instance);
+            DenseNeuronArray[] prevPosInpArray = getInputsFromPosTags(inference, instance);
+            DenseNeuronArray[] nextPosInpArray = getInputsFromPosTags(inference, instance);
 
             Map<Scored<FrameSemanticParse>, DenseNeuronArray> fspScoreMap = Maps.newHashMap();
             Map<Integer, DenseNeuronArray> rankScoreMap = Maps.newHashMap();

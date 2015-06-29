@@ -12,7 +12,6 @@ public class FspLookupTables {
 
     public LookupTable tokenTable;
     public LookupTable posTable;
-    // public LookupTable goldFNPosTable;
     public LookupTable frameTable;
     public LookupTable frameArgTable;
 
@@ -31,8 +30,7 @@ public class FspLookupTables {
             tokenTable = initializeVocabularies(vocabs.tokens, ap.tokenInpDim);
         }
 
-        posTable = initializeVocabularies(vocabs.posTags, ap.tokenInpDim);
-        // goldFNPosTable = initializeVocabularies(vocabs.goldFNPosTags, ap.tokenInpDim);
+        posTable = initializeVocabularies(vocabs.posTags, ap.posInpDim);
         frameTable = initializeVocabularies(vocabs.frameIds, ap.frameIdInpDim);
         frameArgTable = initializeVocabularies(vocabs.frameArguments, ap.frameArgInpDim);
     }

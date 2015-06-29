@@ -44,15 +44,16 @@ public class SemRerankerMain {
     public static boolean usePretrained = true;
 
     @Parameter(names = "-dim", description = "size of param representation")
-    public static int paramDim = 50; // TODO: does not have be the size of all params, need to
-                                     // separate this from inputDim
+    public static int paramDim = 50; // same as word vec dimension
+
+    @Parameter(names = "-dimfile", description = "file containing parameter dimensions")
+    public static String dimFile = "dimensions.txt";
 
     @Parameter(names = "-useInitModel", arity = 1, description = "use AdaDelta for learning")
-    public static boolean useInitModel = true;
+    public static boolean useInitModel = false;
+
     @Parameter(names = "-initmodel", description = "initial model")
-    public static String initmodel = "models/bestinit.model"; // TODO: does not have be the size of
-                                                              // all params, need to
-    // separate this from inputDim
+    public static String initmodel = "models/bestinit.model";
 
     @Parameter(names = "-numIter", description = "number of iterations of SGD/Adadelta/Adagrad")
     public static int numIter = 200;
@@ -61,7 +62,7 @@ public class SemRerankerMain {
     public static double learningRate = 0.001;
 
     @Parameter(names = "-l2", description = "l2 regularizer")
-    public static double l2 = 0.00;
+    public static double l2 = 0.001;
 
     @Parameter(names = "-adadelta", arity = 1, description = "use AdaDelta for learning")
     public static boolean useAdadelta = true;

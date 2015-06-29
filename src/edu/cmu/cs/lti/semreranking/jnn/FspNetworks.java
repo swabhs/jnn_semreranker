@@ -26,6 +26,8 @@ public class FspNetworks {
 
     DenseFullyConnectedLayer scoreLayer;
 
+    // BLSTM argumentCombiner;
+
     public FspNetworks(ArrayParams ap) {
 
         tokenLayer = new DenseFullyConnectedLayer(ap.tokenInpDim, ap.argResultDim);
@@ -45,6 +47,8 @@ public class FspNetworks {
         semScoreLayer = new DenseFullyConnectedLayer(ap.semScoreDim, ap.frameResultDim);
 
         scoreLayer = new DenseFullyConnectedLayer(ap.resultDim, 1);
+        // argumentCombiner = new BLSTM(ap.argResultDim, 150, ap.frameResultDim);// default is tanh
+        // layer
     }
 
     public FspNetworks(String modelFileName) {

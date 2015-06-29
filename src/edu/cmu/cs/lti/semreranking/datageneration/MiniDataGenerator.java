@@ -1,4 +1,4 @@
-package edu.cmu.cs.lti.semreranking;
+package edu.cmu.cs.lti.semreranking.datageneration;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
+import edu.cmu.cs.lti.semreranking.DataPaths;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.utils.CodeGrave;

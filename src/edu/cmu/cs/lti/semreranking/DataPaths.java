@@ -9,7 +9,7 @@ public class DataPaths {
 
     public static final String XML_FILE_EXTN = "thBest.argid.predict.xml";
     public static final String FE_FILE_EXTN = "thBest.argid.predict.frame.elements";
-    public static final String TURBO_FILE_EXTN = "thBest.turboscores";
+    public static final String TURBO_FILE_EXTN = "thBest.synscore";
 
     private String mini = "_mini";
 
@@ -28,7 +28,7 @@ public class DataPaths {
 
         xmlDir = experimentsDir + "results/semreranker_" + dataSet + mini + "/partial/";
         feDir = experimentsDir + "output/semreranker_" + dataSet + mini + "/frameElements/";
-        synDir = SEMHOME + "/training/data/emnlp2015/semreranker." + dataSet + ".turboscores/";
+        synDir = SEMHOME + "/training/data/emnlp2015/semreranker." + dataSet + ".synscores/";
 
         conllFile = SEMHOME
                 + "/training/data/emnlp2015/semreranker." + dataSet

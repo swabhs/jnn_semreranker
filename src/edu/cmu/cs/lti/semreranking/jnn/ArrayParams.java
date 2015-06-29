@@ -1,8 +1,11 @@
 package edu.cmu.cs.lti.semreranking.jnn;
 
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
+
+import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
 
 /**
  * TODO: how to fix these? Just set to 50 (Chris Dyer)
@@ -13,7 +16,7 @@ import com.google.common.collect.Maps;
 public class ArrayParams {
 
     public final int tokenInpDim;
-    public final int posInpDim;
+    public final int posInpDim;// = 25;
     public final int frameIdInpDim;// = 150;
     public final int frameArgInpDim;// = 200;
 
@@ -21,25 +24,7 @@ public class ArrayParams {
     public final int synScoreDim = 2;
 
     public static final Map<Integer, Integer> spanMap = Maps.newTreeMap();
-    public final int spanSizeDim;
-    public static final Map<Integer, Integer> numArgsMap = Maps.newTreeMap();
-    public final int numArgsDim;
-
-    public final int argResultDim;
-    public final int frameResultDim;
-    public final int resultDim;
-
-    public ArrayParams(int tokenInpDim) {
-        this.tokenInpDim = tokenInpDim;
-        this.posInpDim = tokenInpDim;
-
-        this.frameIdInpDim = tokenInpDim;
-        this.frameArgInpDim = tokenInpDim;
-
-        this.argResultDim = tokenInpDim;
-        this.frameResultDim = tokenInpDim;
-        this.resultDim = tokenInpDim;
-
+    {
         spanMap.put(0, 0);
         spanMap.put(1, 1);
         spanMap.put(2, 2);
@@ -49,16 +34,47 @@ public class ArrayParams {
         spanMap.put(6, 8);
         spanMap.put(7, 10);
         spanMap.put(8, 20);
-        this.spanSizeDim = spanMap.size();
+    }
+    public final int spanSizeDim;
 
+    public static final Map<Integer, Integer> numArgsMap = Maps.newTreeMap();
+    {
         numArgsMap.put(0, 0);
         numArgsMap.put(1, 1);
         numArgsMap.put(2, 2);
         numArgsMap.put(3, 3);
         numArgsMap.put(4, 4);
         numArgsMap.put(5, 10);
-        this.numArgsDim = numArgsMap.size();
+    }
+    public final int numArgsDim;
 
+    public final int argResultDim;// = 75;
+    public final int frameResultDim;// = 100;
+    public final int resultDim;// = 100;
+
+    public ArrayParams(int tokenInpDim, String paramDimFile) {
+        this.tokenInpDim = tokenInpDim;
+
+        Map<String, Integer> paramDims = readParamDimFile(paramDimFile);
+        this.posInpDim = paramDims.get("pos");
+        this.frameIdInpDim = paramDims.get("frame");
+        this.frameArgInpDim = paramDims.get("framearg");
+        this.argResultDim = paramDims.get("argresult");
+        this.frameResultDim = argResultDim; // these two are the same bcz tokens, pos depend on both
+        this.resultDim = paramDims.get("result");
+
+        this.spanSizeDim = spanMap.size();
+        this.numArgsDim = numArgsMap.size();
+    }
+
+    public Map<String, Integer> readParamDimFile(String paramDimFile) {
+        List<String> lines = BasicFileReader.readFile(paramDimFile);
+        Map<String, Integer> paramDims = Maps.newHashMap();
+        for (String line : lines) {
+            String ele[] = line.split("\t");
+            paramDims.put(ele[0], Integer.parseInt(ele[1]));
+        }
+        return paramDims;
     }
 
 }

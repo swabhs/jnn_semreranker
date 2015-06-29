@@ -46,10 +46,14 @@ public class Frame {
 
     public String toString(int exNum) {
         StringBuilder builder = new StringBuilder();
-        builder.append("0\t"); // 0
+        builder.append("1\t"); // 0
         builder.append(score); // 1
         builder.append("\t");
-        builder.append(numArgs + 1); // 2
+        if (numArgs == 1 && arguments.iterator().next().id.equals("NULL")) {
+            builder.append(1); // 2
+        } else {
+            builder.append(numArgs + 1); // 2
+        }
         builder.append("\t");
         builder.append(id); // 3
         builder.append("\t");
@@ -71,13 +75,15 @@ public class Frame {
         builder.append(exNum); // 7
 
         for (Argument a : arguments) {
+            if (a.id.equals("NULL")) {
+                break;
+            }
             builder.append("\t");
             builder.append(a.toString());
         }
 
         return builder.toString();
     }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
