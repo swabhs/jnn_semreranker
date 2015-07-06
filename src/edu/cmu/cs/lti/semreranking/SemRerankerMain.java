@@ -31,8 +31,8 @@ public class SemRerankerMain {
     public static String semHome =
             "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
 
-    @Parameter(names = "-model", description = "semafor model used to obtain reranking data")
-    public static String model = "basic_tbps";
+    @Parameter(names = "-metric", description = "source of k-best syntax")
+    public static String metric = "exactKbest";
 
     @Parameter(names = "-wordvectors", description = "")
     public static String wvfile = "wiki_structskipngram_50.framenet";

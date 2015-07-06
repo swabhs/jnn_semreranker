@@ -53,7 +53,8 @@ public class FileUtils {
 
         DataPaths dataPaths = new DataPaths(useMini, "train");
         Map<Integer, List<Scored<FrameSemanticParse>>> allTrainFsps =
-                readTest(dataPaths.xmlDir, dataPaths.feDir, dataPaths.synDir, reader);
+                readTest(dataPaths.semaforResultsDir, dataPaths.semaforOutFEDir,
+                        dataPaths.synScoresDir, reader);
         int numTrainRanks = allTrainFsps.entrySet().iterator().next().getValue().size();
 
         SentsAndToks sentsAndToks = readConlls(dataPaths.conllFile);
@@ -80,7 +81,8 @@ public class FileUtils {
         posVocab.addAll(testSentsAndToks.posVocab);
 
         Map<Integer, List<Scored<FrameSemanticParse>>> allTestFsps =
-                readTest(testDataPaths.xmlDir, testDataPaths.feDir, testDataPaths.synDir, reader);
+                readTest(testDataPaths.semaforResultsDir, testDataPaths.semaforOutFEDir,
+                        testDataPaths.synScoresDir, reader);
         int numTestRanks = allTestFsps.entrySet().iterator().next().getValue().size();
 
         System.err.println("Number of TEST sentences read = "
@@ -102,7 +104,8 @@ public class FileUtils {
         posVocab.addAll(devSentsAndToks.posVocab);
 
         Map<Integer, List<Scored<FrameSemanticParse>>> allDevFsps =
-                readTest(devDataPaths.xmlDir, devDataPaths.feDir, devDataPaths.synDir, reader);
+                readTest(devDataPaths.semaforResultsDir, devDataPaths.semaforOutFEDir,
+                        devDataPaths.synScoresDir, reader);
         int numDevRanks = allDevFsps.entrySet().iterator().next().getValue().size();
 
         System.err.println("Number of DEV sentences read = "
@@ -130,54 +133,6 @@ public class FileUtils {
                 vocabs);
     }
 
-    // public static Map<Integer, TreeSet<Scored<FrameSemanticParse>>> readAndSortTrain(
-    // String xmlDir,
-    // String feDir,
-    // String synDir,
-    // FeReader reader) {
-    //
-    // System.err.println("Reading data from...");
-    // System.err.println(feDir);
-    // System.err.println(xmlDir);
-    //
-    // Map<Integer, TreeSet<Scored<FrameSemanticParse>>> exFspMap = Maps.newHashMap();
-    // int numRanks = new File(feDir).listFiles().length;
-    //
-    // for (int rank = 0; rank < numRanks; rank++) {
-    // String xmlFileName = xmlDir + rank + DataPaths.XML_FILE_EXTN;
-    // String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
-    // String synScoreFileName = synDir + rank + DataPaths.TURBO_FILE_EXTN;
-    //
-    // Multimap<Integer, FrameSemanticParse> fsps = reader.readFeFile(feFileName);
-    // Map<Integer, FspScore> framescores = readFscoreFile(xmlFileName);
-    // Map<Integer, Double> synScores = readSynScoreFile(synScoreFileName);
-    //
-    // for (int exNum : fsps.keySet()) {
-    // for (FrameSemanticParse fsp : fsps.get(exNum)) {
-    // Scored<FrameSemanticParse> scoFsp = null;
-    // if (framescores.containsKey(exNum) == false) {
-    // scoFsp = new Scored<FrameSemanticParse>(
-    // fsp, new FspScore(), synScores.get(exNum), rank);
-    // } else {
-    // scoFsp = new Scored<FrameSemanticParse>(
-    // fsp, framescores.get(exNum), synScores.get(exNum), rank);
-    // }
-    //
-    // if (exFspMap.containsKey(exNum) == false) {
-    // TreeSet<Scored<FrameSemanticParse>> multiset = Sets.newTreeSet();
-    // exFspMap.put(exNum, multiset);
-    // }
-    // TreeSet<Scored<FrameSemanticParse>> sortedFsps = exFspMap.get(exNum);
-    // sortedFsps.add(scoFsp);
-    // exFspMap.put(exNum, sortedFsps);
-    // }
-    // }
-    // if (rank % 25 == 0)
-    // System.err.println("read and sorted rank " + rank);
-    // }
-    // return exFspMap;
-    // }
-
     public static Map<Integer, List<Scored<FrameSemanticParse>>> readTest(
             String xmlDir,
             String feDir,
@@ -192,9 +147,9 @@ public class FileUtils {
         int numRanks = new File(feDir).listFiles().length;
 
         for (int rank = 0; rank < numRanks; rank++) {
-            String xmlFileName = xmlDir + rank + DataPaths.XML_FILE_EXTN;
+            String xmlFileName = xmlDir + rank + DataPaths.RESULTS_FILE_EXTN;
             String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
-            String synScoreFileName = synDir + rank + DataPaths.TURBO_FILE_EXTN;
+            String synScoreFileName = synDir + rank + DataPaths.SYNSCORE_FILE_EXTN;
 
             Multimap<Integer, FrameSemanticParse> fsps = reader.readFeFile(feFileName);
             Map<Integer, FspScore> framescores = readFscoreFile(xmlFileName);

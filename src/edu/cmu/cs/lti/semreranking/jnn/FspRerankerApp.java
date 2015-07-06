@@ -124,6 +124,8 @@ public class FspRerankerApp {
 
                 System.err.println("\nWriting down model for iteration " + epoch);
                 network.saveAllParams("models/semrerank.epoch" + epoch + ".model");
+            } else {
+                System.err.println();
             }
             Evaluator.writeRerankedBest(bestTrainRanks,
                     "logs/reranked.train." + epoch + ".frame.elements",

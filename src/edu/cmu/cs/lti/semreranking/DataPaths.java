@@ -3,20 +3,22 @@ package edu.cmu.cs.lti.semreranking;
 public class DataPaths {
 
     public static final String SEMHOME = SemRerankerMain.semHome;
+    public static final String METRIC = SemRerankerMain.metric;
+    public static final String RERANKER_DATADIR = SEMHOME + "/training/data/emnlp2015/";
 
     public static final String WV_FILENAME = SEMHOME
             + "/training/data/emnlp2015/" + SemRerankerMain.wvfile;
 
-    public static final String XML_FILE_EXTN = "thBest.argid.predict.xml";
+    public static final String RESULTS_FILE_EXTN = "thBest.argid.predict.xml";
     public static final String FE_FILE_EXTN = "thBest.argid.predict.frame.elements";
-    public static final String TURBO_FILE_EXTN = "thBest.synscore";
+    public static final String SYNSCORE_FILE_EXTN = "thBest.synscore";
 
-    private String mini = "_mini";
+    private String mini = ".mini";
 
-    private String experimentsDir;
-    public String xmlDir;
-    public String feDir;
-    public String synDir;
+    public String semaforResultsDir;
+    public String semaforOutFEDir;
+    public String synScoresDir;
+    public String conllDir;
 
     public String conllFile;
 
@@ -24,15 +26,15 @@ public class DataPaths {
         if (useMini == false) {
             mini = "";
         }
-        experimentsDir = SEMHOME + "experiments/" + SemRerankerMain.model + "/";
+        dataSet = "." + dataSet;
 
-        xmlDir = experimentsDir + "results/semreranker_" + dataSet + mini + "/partial/";
-        feDir = experimentsDir + "output/semreranker_" + dataSet + mini + "/frameElements/";
-        synDir = SEMHOME + "/training/data/emnlp2015/semreranker." + dataSet + ".synscores/";
+        semaforResultsDir = RERANKER_DATADIR + METRIC + dataSet + mini + ".semaforResults/";
+        semaforOutFEDir = RERANKER_DATADIR + METRIC + dataSet + mini + ".frameElements/";
+        synScoresDir = RERANKER_DATADIR + METRIC + dataSet + ".synscores/";
+        conllDir = RERANKER_DATADIR + METRIC + dataSet + ".conlls/";
 
-        conllFile = SEMHOME
-                + "/training/data/emnlp2015/semreranker." + dataSet
-                + ".sentences.turboparsed.basic.stanford.lemmatized.conll";
+        conllFile = RERANKER_DATADIR + "semreranker" + dataSet
+                + ".stanfdep.turbobasic.1best.conll";
     }
 
 }

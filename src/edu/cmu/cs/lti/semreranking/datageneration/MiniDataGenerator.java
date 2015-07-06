@@ -1,5 +1,6 @@
 package edu.cmu.cs.lti.semreranking.datageneration;
 
+import java.io.File;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.List;
@@ -8,15 +9,17 @@ import java.util.Map;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Maps;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
 import edu.cmu.cs.lti.semreranking.DataPaths;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FspScore;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
-import edu.cmu.cs.lti.semreranking.utils.CodeGrave;
 import edu.cmu.cs.lti.semreranking.utils.FeReader;
+import edu.cmu.cs.lti.semreranking.utils.FileUtils;
 
 /**
  * Given the semafor k-best results directory, creates a list of fsps sorted by f-score and writes
@@ -46,15 +49,14 @@ public class MiniDataGenerator {
     static void makeMiniDataSet(
             Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> allFsps,
             String feDir,
-            String xmlDir,
-            int numExamples,
-            int numRanks) {
+            String semaforResultsDir,
+            int numExamples) {
 
         System.err.println("\nMaking mini dataset with " + numExamples + " examples with "
                 + numRanks + " ranks here...");
 
-        System.err.println(feDir);
-        System.err.println(xmlDir);
+        createDirectory(feDir);
+        createDirectory(semaforResultsDir);
 
         for (int col = 0; col < numRanks; col++) {
             List<String> feLines = Lists.newArrayList();
@@ -62,7 +64,7 @@ public class MiniDataGenerator {
             fscoreLines.add("Sentence ID\tFscore\tFscore\tFscore");
 
             int exNum = 0;
-            for (Integer row : allFsps.keySet()) {
+            for (int row : allFsps.keySet()) {
                 if (allFsps.get(row).containsKey(col)) {
                     for (Scored<FrameSemanticParse> scoFsp : allFsps.get(row).get(col)) {
                         feLines.add(scoFsp.entity.toString(row));
@@ -89,7 +91,8 @@ public class MiniDataGenerator {
                 }
             }
             BasicFileWriter.writeStrings(feLines, feDir + col + DataPaths.FE_FILE_EXTN);
-            BasicFileWriter.writeStrings(fscoreLines, xmlDir + col + DataPaths.XML_FILE_EXTN);
+            BasicFileWriter.writeStrings(fscoreLines, semaforResultsDir + col
+                    + DataPaths.RESULTS_FILE_EXTN);
         }
         System.err.println();
     }
@@ -105,13 +108,72 @@ public class MiniDataGenerator {
         for (String dataset : dataSetSizes.keySet()) {
 
             DataPaths paths = new DataPaths(false, dataset);
-            Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> unsorted = CodeGrave
-                    .readScoredFsps(paths.xmlDir, paths.feDir, paths.synDir, new FeReader());
+            Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> scoredFsps = readScoredFsps(
+                    paths.semaforResultsDir,
+                    paths.semaforOutFEDir,
+                    paths.synScoresDir);
 
             DataPaths outpaths = new DataPaths(true, dataset);
-            makeMiniDataSet(unsorted, outpaths.feDir, outpaths.xmlDir, dataSetSizes.get(dataset),
-                    50);
+            makeMiniDataSet(
+                    scoredFsps,
+                    outpaths.semaforOutFEDir,
+                    outpaths.semaforResultsDir,
+                    dataSetSizes.get(dataset));
         }
 
+    }
+
+    public static void createDirectory(String fileName) {
+        System.err.println("Creating directory : " + fileName);
+        File feDirFile = new File(fileName);
+        if (feDirFile.exists()) {
+            feDirFile.delete();
+        }
+        feDirFile.mkdir();
+    }
+
+    public static Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> readScoredFsps(
+            String xmlDir, String feDir, String synDir) {
+
+        System.err.println("Reading data from...");
+        System.err.println(feDir);
+        System.err.println(xmlDir);
+
+        Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> exRanksMap = Maps.newHashMap();
+        int numRanks = new File(feDir).listFiles().length;
+
+        for (int rank = 0; rank < numRanks; rank++) {
+            String xmlFileName = xmlDir + rank + DataPaths.RESULTS_FILE_EXTN;
+            String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
+            String synFileName = synDir + rank + DataPaths.SYNSCORE_FILE_EXTN;
+
+            Multimap<Integer, FrameSemanticParse> fsps = new FeReader().readFeFile(feFileName);
+            Map<Integer, FspScore> framescores = FileUtils.readFscoreFile(xmlFileName);
+            Map<Integer, Double> synScores = FileUtils.readSynScoreFile(synFileName);
+
+            for (int exNum : fsps.keySet()) {
+                Multimap<Integer, Scored<FrameSemanticParse>> allRanks = null;
+                if (exRanksMap.containsKey(exNum) == false) {
+                    allRanks = HashMultimap.create();
+                    exRanksMap.put(exNum, allRanks);
+                }
+                allRanks = exRanksMap.get(exNum);
+                for (FrameSemanticParse fsp : fsps.get(exNum)) {
+                    Scored<FrameSemanticParse> scoFsp = null;
+                    if (framescores.containsKey(exNum) == false) {
+                        scoFsp = new Scored<FrameSemanticParse>(
+                                fsp, new FspScore(), synScores.get(exNum), rank);
+                    } else {
+                        scoFsp = new Scored<FrameSemanticParse>(
+                                fsp, framescores.get(exNum), synScores.get(exNum), rank);
+                    }
+                    allRanks.put(rank, scoFsp);
+                }
+                exRanksMap.put(exNum, allRanks);
+            }
+        }
+
+        System.err.println("Number of examples read = " + exRanksMap.keySet().size());
+        return exRanksMap;
     }
 }
