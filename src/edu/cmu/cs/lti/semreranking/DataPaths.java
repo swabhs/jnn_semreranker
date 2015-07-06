@@ -6,8 +6,7 @@ public class DataPaths {
     public static final String METRIC = SemRerankerMain.metric;
     public static final String RERANKER_DATADIR = SEMHOME + "/training/data/emnlp2015/";
 
-    public static final String WV_FILENAME = SEMHOME
-            + "/training/data/emnlp2015/" + SemRerankerMain.wvfile;
+    public static final String WV_FILENAME = RERANKER_DATADIR + SemRerankerMain.wvfile;
 
     public static final String RESULTS_FILE_EXTN = "thBest.argid.predict.xml";
     public static final String FE_FILE_EXTN = "thBest.argid.predict.frame.elements";
