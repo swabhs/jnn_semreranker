@@ -65,7 +65,7 @@ public class SemRerankerMain {
     public static double l2 = 0.001;
 
     @Parameter(names = "-adadelta", arity = 1, description = "use AdaDelta for learning")
-    public static boolean useAdadelta = true;
+    public static boolean useAdadelta = false;
 
     @Parameter(names = "-adagrad", arity = 1, description = "use AdaGrad for learning")
     public static boolean useAdagrad = false;

@@ -29,9 +29,6 @@ import edu.cmu.cs.lti.semreranking.utils.FileUtils;
  */
 public class MiniDataGenerator {
 
-    @Parameter(names = "-mini", arity = 1, description = "use a mini corpus to test")
-    public static boolean useMini = true;
-
     @Parameter(names = "-semhome", description = "SEMAFOR home")
     public static String semhome = "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
 

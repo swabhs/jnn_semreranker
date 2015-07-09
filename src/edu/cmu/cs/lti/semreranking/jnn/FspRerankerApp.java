@@ -95,11 +95,11 @@ public class FspRerankerApp {
                 inference.backward();
 
                 if (exNum == trainData.trainInstances.size() - 1 || exNum % batchSize == 0) {
-                    inference.commit(0);
-                    // network.update();
-                    // lookupTables.posTable.updateWeights(0.0, 0.0);
-                    // lookupTables.frameArgTable.updateWeights(0.0, 0.0);
-                    // lookupTables.frameTable.updateWeights(0.0, 0.0);
+                    // inference.commit(0);
+                    network.update();
+                    lookupTables.posTable.updateWeights(0.0, 0.0);
+                    lookupTables.frameArgTable.updateWeights(0.0, 0.0);
+                    lookupTables.frameTable.updateWeights(0.0, 0.0);
                 }
             }
 
