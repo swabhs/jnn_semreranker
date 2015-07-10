@@ -75,15 +75,13 @@ public class FspRerankerApp {
 
                 DenseNeuronArray[] tokenInpArr = getInputsFromTokens(inference, trainInst);
                 DenseNeuronArray[] posInpArr = getInputsFromPosTags(inference, trainInst);
-                DenseNeuronArray[] prevPosInpArr = getInputsFromPosTags(inference, trainInst);
-                DenseNeuronArray[] nextPosInpArr = getInputsFromPosTags(inference, trainInst);
 
                 for (int goldRank = 0; goldRank < trainInst.numUniqueParses; goldRank++) {
                     Scored<FrameSemanticParse> fsp = trainInst.getParseAtRank(goldRank);
                     FspInputNeuronArrays fspInpArrs = new FspInputNeuronArrays(lookupTables, ap,
                             inference, fsp);
                     DenseNeuronArray score = buildFspRepresentation(tokenInpArr,
-                            posInpArr, prevPosInpArr, nextPosInpArr, fspInpArrs, inference, fsp);
+                            posInpArr, fspInpArrs, inference, fsp);
                     goldRankScoreMap.put(goldRank, score);
                 }
 
@@ -95,7 +93,8 @@ public class FspRerankerApp {
                 inference.backward();
 
                 if (exNum == trainData.trainInstances.size() - 1 || exNum % batchSize == 0) {
-                    // inference.commit(0);
+                    // inference.commit(0); // if you want to overfit to train. if u want to
+                    // generalize, uncomment and use below...
                     network.update();
                     lookupTables.posTable.updateWeights(0.0, 0.0);
                     lookupTables.frameArgTable.updateWeights(0.0, 0.0);
@@ -113,8 +112,6 @@ public class FspRerankerApp {
             Map<Integer, Scored<FrameSemanticParse>> bestDevRanks = doDeepDecoding(devData);
             Result devEval = Evaluator.getRerankedMicroAvg(bestDevRanks);
             System.err.print("dev = " + formatter.format(devEval.f1) + "\t");
-
-            // System.err.println();
 
             if (devEval.compareTo(bestDevEval) > 0) {
                 bestDevEval = devEval;
@@ -139,8 +136,6 @@ public class FspRerankerApp {
     private DenseNeuronArray buildFspRepresentation(
             DenseNeuronArray[] tokenInpArray,
             DenseNeuronArray[] posInpArray,
-            DenseNeuronArray[] prevPosInpArray,
-            DenseNeuronArray[] nextPosInpArray,
             FspInputNeuronArrays inp,
             GraphInference inference,
             Scored<FrameSemanticParse> scoredFsp) {
@@ -149,7 +144,6 @@ public class FspRerankerApp {
         sentLinear.setName("sentence linear");
         inference.addNeurons(sentLinear);
 
-        // Set<Integer> tokensParticipatingInFrames = Sets.newHashSet(); // don't add in null frame
         int i = 0;
         int j = 0;
         for (Frame frame : scoredFsp.entity.frames) {
@@ -162,10 +156,7 @@ public class FspRerankerApp {
                         tokenInpArray[pos], frameLinear, network.tokenLayer));
                 inference.addMapping(new OutputMappingDenseToDense(
                         posInpArray[pos], frameLinear, network.posLayer));
-                // tokensParticipatingInFrames.add(pos);
             }
-            // inference.addMapping(new OutputMappingDenseToDense(inp.posArray[i], frameLinear,
-            // network.goldFNPosLayer));
 
             inference.addMapping(new OutputMappingDenseToDense(
                     inp.frameIdsArray[i], frameLinear, network.frameLayer));
@@ -183,33 +174,10 @@ public class FspRerankerApp {
                     if (pos == -1) { // for frames with no arguments
                         continue;
                     }
-                    // tokensParticipatingInFrames.add(pos);
                     inference.addMapping(new OutputMappingDenseToDense(
                             tokenInpArray[pos], argLinear, network.tokenLayer));
                     inference.addMapping(new OutputMappingDenseToDense(
                             posInpArray[pos], argLinear, network.posLayer));
-                }
-
-                // adding window of 2 prev tokens/pos tags
-                for (int prev = arg.start - 1; prev > arg.start - 3; prev--) {
-                    if (prev < 0) {
-                        break;
-                    }
-                    // inference.addMapping(new OutputMappingDenseToDense(
-                    // tokenInpArray[prev], argLinear, network.tokenLayer));
-                    inference.addMapping(new OutputMappingDenseToDense(
-                            prevPosInpArray[prev], argLinear, network.prevPosLayer));
-                }
-
-                // adding window of 2 next tokens/pos tags
-                for (int next = arg.end + 1; next < arg.start + 3; next++) {
-                    if (next >= tokenInpArray.length) {
-                        break;
-                    }
-                    // inference.addMapping(new OutputMappingDenseToDense(
-                    // tokenInpArray[next], argLinear, network.tokenLayer));
-                    inference.addMapping(new OutputMappingDenseToDense(
-                            nextPosInpArray[next], argLinear, network.nextPosLayer));
                 }
 
                 DenseNeuronArray spanSize = getSpanSizeBins(arg.end - arg.start);
@@ -263,16 +231,6 @@ public class FspRerankerApp {
             i++;
         }
 
-        // adding null-frame vectors
-        // for (int pos = 0; pos < tokenInpArray.length; pos++) {
-        // if (tokensParticipatingInFrames.contains(pos) == false) {
-        // inference.addMapping(new OutputMappingDenseToDense(tokenInpArray[pos],
-        // sentLinear, network.getTokenLayer()));
-        // inference.addMapping(new OutputMappingDenseToDense(posInpArray[pos],
-        // sentLinear, network.getTokenLayer()));
-        // }
-        // }
-
         DenseNeuronArray synScore = new DenseNeuronArray(2);
         synScore.setName("syntactic");
         synScore.init();
@@ -306,8 +264,6 @@ public class FspRerankerApp {
             GraphInference inference = new GraphInference(0, false);
             DenseNeuronArray[] tokenInpArray = getInputsFromTokens(inference, instance);
             DenseNeuronArray[] posInpArray = getInputsFromPosTags(inference, instance);
-            DenseNeuronArray[] prevPosInpArray = getInputsFromPosTags(inference, instance);
-            DenseNeuronArray[] nextPosInpArray = getInputsFromPosTags(inference, instance);
 
             Map<Scored<FrameSemanticParse>, DenseNeuronArray> fspScoreMap = Maps.newHashMap();
             Map<Integer, DenseNeuronArray> rankScoreMap = Maps.newHashMap();
@@ -317,7 +273,7 @@ public class FspRerankerApp {
                 FspInputNeuronArrays fspInp = new FspInputNeuronArrays(lookupTables, ap, inference,
                         scoredFsp);
                 DenseNeuronArray score = buildFspRepresentation(tokenInpArray, posInpArray,
-                        prevPosInpArray, nextPosInpArray, fspInp, inference, scoredFsp);
+                        fspInp, inference, scoredFsp);
                 fspScoreMap.put(scoredFsp, score);
                 rankScoreMap.put(rank, score);
             }
@@ -345,13 +301,11 @@ public class FspRerankerApp {
 
     private DenseNeuronArray[] getInputsFromTokens(
             GraphInference inference, DataInstance instance) {
-        DenseNeuronArray[] tokenInpArray = DenseNeuronArray.asArray(instance.size,
-                ap.tokenInpDim);
+        DenseNeuronArray[] tokenInpArray = DenseNeuronArray.asArray(instance.size, ap.tokenInpDim);
         inference.addNeurons(tokenInpArray);
 
         inference.addMapping(new OutputMappingStringArrayToDenseArray(instance.tokens,
                 tokenInpArray, lookupTables.tokenTable));
-
         return tokenInpArray;
     }
 
