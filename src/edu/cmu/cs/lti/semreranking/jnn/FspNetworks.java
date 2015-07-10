@@ -20,11 +20,8 @@ public class FspNetworks {
     DenseFullyConnectedLayer numArgsLayer;
     DenseFullyConnectedLayer frameLayer; // W_frame
 
-    DenseFullyConnectedLayer allFramesLayer; // U
-    DenseFullyConnectedLayer synScoreLayer; // alpha
-    DenseFullyConnectedLayer semScoreLayer; // beta
-
-    DenseFullyConnectedLayer scoreLayer;
+    DenseFullyConnectedLayer localScoresLayer; // alpha, beta
+    DenseFullyConnectedLayer globalScoreLayer;
 
     // BLSTM argumentCombiner;
 
@@ -42,11 +39,8 @@ public class FspNetworks {
         numArgsLayer = new DenseFullyConnectedLayer(ap.numArgsDim, ap.frameResultDim);
         frameLayer = new DenseFullyConnectedLayer(ap.frameIdInpDim, ap.frameResultDim);
 
-        allFramesLayer = new DenseFullyConnectedLayer(ap.frameResultDim, ap.resultDim);
-        synScoreLayer = new DenseFullyConnectedLayer(ap.synScoreDim, ap.resultDim);
-        semScoreLayer = new DenseFullyConnectedLayer(ap.semScoreDim, ap.frameResultDim);
-
-        scoreLayer = new DenseFullyConnectedLayer(ap.resultDim, 1);
+        localScoresLayer = new DenseFullyConnectedLayer(ap.localScoresDim, 1);
+        globalScoreLayer = new DenseFullyConnectedLayer(ap.frameResultDim, 1);
         // argumentCombiner = new BLSTM(ap.argResultDim, 150, ap.frameResultDim);// default is tanh
         // layer
     }
@@ -65,11 +59,8 @@ public class FspNetworks {
         numArgsLayer = DenseFullyConnectedLayer.load(in);
         frameLayer = DenseFullyConnectedLayer.load(in);
 
-        allFramesLayer = DenseFullyConnectedLayer.load(in);
-        synScoreLayer = DenseFullyConnectedLayer.load(in);
-        semScoreLayer = DenseFullyConnectedLayer.load(in);
-
-        scoreLayer = DenseFullyConnectedLayer.load(in);
+        localScoresLayer = DenseFullyConnectedLayer.load(in);
+        globalScoreLayer = DenseFullyConnectedLayer.load(in);
     }
 
     public void saveAllParams(String modelFileName) {
@@ -86,10 +77,8 @@ public class FspNetworks {
         numArgsLayer.save(out);
         frameLayer.save(out);
 
-        allFramesLayer.save(out);
-        synScoreLayer.save(out);
-        semScoreLayer.save(out);
-        scoreLayer.save(out);
+        localScoresLayer.save(out);
+        globalScoreLayer.save(out);
     }
 
     public void update() {
@@ -105,10 +94,8 @@ public class FspNetworks {
         numArgsLayer.updateWeights(0.0, 0.0);
         frameLayer.updateWeights(0.0, 0.0);
 
-        allFramesLayer.updateWeights(0.0, 0.0);
-        synScoreLayer.updateWeights(0.0, 0.0);
-        semScoreLayer.updateWeights(0.0, 0.0);
-        scoreLayer.updateWeights(0.0, 0.0);
+        localScoresLayer.updateWeights(0.0, 0.0);
+        globalScoreLayer.updateWeights(0.0, 0.0);
     }
 
 }

@@ -20,8 +20,8 @@ public class ArrayParams {
     public final int frameIdInpDim;// = 150;
     public final int frameArgInpDim;// = 200;
 
-    public final int semScoreDim = 2; // Ideally, should be 1 but the library won't allow me
-    public final int synScoreDim = 2;
+    public final int semScoreDim = 2;
+    public final int localScoresDim = 2;// Ideally, should be 1 but the library won't allow me
 
     public static final Map<Integer, Integer> spanMap = Maps.newTreeMap();
     {
@@ -50,7 +50,7 @@ public class ArrayParams {
 
     public final int argResultDim;// = 75;
     public final int frameResultDim;// = 100;
-    public final int resultDim;// = 100;
+    // public final int resultDim;// = 100;
 
     public ArrayParams(int tokenInpDim, String paramDimFile) {
         this.tokenInpDim = tokenInpDim;
@@ -61,7 +61,7 @@ public class ArrayParams {
         this.frameArgInpDim = paramDims.get("framearg");
         this.argResultDim = paramDims.get("argresult");
         this.frameResultDim = argResultDim; // these two are the same bcz tokens, pos depend on both
-        this.resultDim = paramDims.get("result");
+        // this.resultDim = paramDims.get("result");
 
         this.spanSizeDim = spanMap.size();
         this.numArgsDim = numArgsMap.size();

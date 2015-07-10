@@ -62,7 +62,7 @@ public class SemRerankerMain {
     public static double learningRate = 0.001;
 
     @Parameter(names = "-l2", description = "l2 regularizer")
-    public static double l2 = 0.001;
+    public static double l2 = 0.005;
 
     @Parameter(names = "-adadelta", arity = 1, description = "use AdaDelta for learning")
     public static boolean useAdadelta = false;
