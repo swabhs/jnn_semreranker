@@ -18,8 +18,8 @@ import edu.cmu.cs.lti.semreranking.TestData;
 import edu.cmu.cs.lti.semreranking.TrainData;
 import edu.cmu.cs.lti.semreranking.TrainInstance;
 import edu.cmu.cs.lti.semreranking.datastructs.Argument;
-import edu.cmu.cs.lti.semreranking.datastructs.Frame;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.evaluation.Evaluator;
 import edu.cmu.cs.lti.semreranking.evaluation.Result;
@@ -36,9 +36,6 @@ public class FspRerankerApp {
     private FspLookupTables lookupTables; // inputs
 
     private NumberFormat formatter = SemRerankerMain.formatter;
-
-    private double alpha = 1.0;
-    private double beta = 1.0;
 
     public FspRerankerApp(AllRerankingData allData, Loss loss) {
         ap = new ArrayParams(SemRerankerMain.paramDim, SemRerankerMain.dimFile);
@@ -80,18 +77,18 @@ public class FspRerankerApp {
                 DenseNeuronArray[] posInpArr = getInputsFromPosTags(inference, trainInst);
 
                 for (int goldRank = 0; goldRank < trainInst.numUniqueParses; goldRank++) {
-                    Scored<FrameSemanticParse> fsp = trainInst.getParseAtRank(goldRank);
+                    Scored<FrameSemAnalysis> fsp = trainInst.getParseAtRank(goldRank);
                     FspInputNeuronArrays fspInpArrs = new FspInputNeuronArrays(lookupTables, ap,
                             inference, fsp);
 
-                    for (int frameNumber = 0; frameNumber < fsp.entity.numFrames; frameNumber++) {
+                    for (int frameNumber = 0; frameNumber < fsp.entity.numFsps; frameNumber++) {
                         DenseNeuronArray score = buildFspRepresentation(
                                 tokenInpArr,
                                 posInpArr,
                                 fspInpArrs,
                                 inference,
                                 fsp,
-                                fsp.entity.frames.get(frameNumber),
+                                fsp.entity.frameSemParses.get(frameNumber),
                                 frameNumber);
                         goldRankScoreMap.put(goldRank, score); // TODO : means nothing yet
                     }
@@ -117,17 +114,17 @@ public class FspRerankerApp {
             System.err.print("loss = " + formatter.format(totalLoss) + "\t");
             // System.err.print("avgrank = " + formatter.format(avgRank / trainData.size) + "\t");
 
-            Map<Integer, Scored<FrameSemanticParse>> bestTrainRanks = doDeepDecoding(trainData);
+            Map<Integer, Scored<FrameSemAnalysis>> bestTrainRanks = doDeepDecoding(trainData);
             Result trainEval = Evaluator.getRerankedMicroAvg(bestTrainRanks);
             System.err.print("train = " + formatter.format(trainEval.f1) + "\t");
 
-            Map<Integer, Scored<FrameSemanticParse>> bestDevRanks = doDeepDecoding(devData);
+            Map<Integer, Scored<FrameSemAnalysis>> bestDevRanks = doDeepDecoding(devData);
             Result devEval = Evaluator.getRerankedMicroAvg(bestDevRanks);
             System.err.print("dev = " + formatter.format(devEval.f1) + "\t");
 
             if (devEval.compareTo(bestDevEval) > 0) {
                 bestDevEval = devEval;
-                Map<Integer, Scored<FrameSemanticParse>> bestTestRanks = doDeepDecoding(testData);
+                Map<Integer, Scored<FrameSemAnalysis>> bestTestRanks = doDeepDecoding(testData);
                 Result testEval = Evaluator.getRerankedMicroAvg(bestTestRanks);
                 System.err.print("test = " + formatter.format(testEval.f1) + "\t");
 
@@ -150,8 +147,8 @@ public class FspRerankerApp {
             DenseNeuronArray[] posInpArray,
             FspInputNeuronArrays inp,
             GraphInference inference,
-            Scored<FrameSemanticParse> scoredFsp,
-            Frame frameBeingReranked,
+            Scored<FrameSemAnalysis> scoredFsp,
+            FrameSemParse frameBeingReranked,
             int frameNumber) {
 
         int argNumber = 0;
@@ -233,8 +230,8 @@ public class FspRerankerApp {
         return predictedFrameScore;
     }
 
-    public Map<Integer, Scored<FrameSemanticParse>> doDeepDecoding(Data data) {
-        Map<Integer, Scored<FrameSemanticParse>> bestRanks = Maps.newTreeMap(); // preserve ex order
+    public Map<Integer, Scored<FrameSemAnalysis>> doDeepDecoding(Data data) {
+        Map<Integer, Scored<FrameSemAnalysis>> bestRanks = Maps.newTreeMap(); // preserve ex order
 
         for (int exNum = 0; exNum < data.size; exNum++) {
             DataInstance instance = data.getInstance(exNum);
@@ -243,22 +240,22 @@ public class FspRerankerApp {
             DenseNeuronArray[] tokenInpArr = getInputsFromTokens(inference, instance);
             DenseNeuronArray[] posInpArr = getInputsFromPosTags(inference, instance);
 
-            Map<Scored<FrameSemanticParse>, DenseNeuronArray> fspScoreMap = Maps.newHashMap();
+            Map<Scored<FrameSemAnalysis>, DenseNeuronArray> fspScoreMap = Maps.newHashMap();
             Map<Integer, DenseNeuronArray> rankScoreMap = Maps.newHashMap();
             for (int rank = 0; rank < instance.numUniqueParses; rank++) {
-                Scored<FrameSemanticParse> scoredFsp = instance.getParseAtRank(rank);
+                Scored<FrameSemAnalysis> scoredFsp = instance.getParseAtRank(rank);
 
                 FspInputNeuronArrays fspInpArrs = new FspInputNeuronArrays(lookupTables, ap,
                         inference,
                         scoredFsp);
-                for (int frameNumber = 0; frameNumber < scoredFsp.entity.numFrames; frameNumber++) {
+                for (int frameNumber = 0; frameNumber < scoredFsp.entity.numFsps; frameNumber++) {
                     DenseNeuronArray score = buildFspRepresentation(
                             tokenInpArr,
                             posInpArr,
                             fspInpArrs,
                             inference,
                             scoredFsp,
-                            scoredFsp.entity.frames.get(frameNumber),
+                            scoredFsp.entity.frameSemParses.get(frameNumber),
                             frameNumber);
                     fspScoreMap.put(scoredFsp, score); // TODO : means nothing yet
                     rankScoreMap.put(rank, score); // TODO : means nothing yet
@@ -268,8 +265,8 @@ public class FspRerankerApp {
             inference.forward();
 
             double max = Double.NEGATIVE_INFINITY;
-            Scored<FrameSemanticParse> argmax = null;
-            for (Scored<FrameSemanticParse> candidate : fspScoreMap.keySet()) {
+            Scored<FrameSemAnalysis> argmax = null;
+            for (Scored<FrameSemAnalysis> candidate : fspScoreMap.keySet()) {
                 if (fspScoreMap.get(candidate).getNeuron(0) > max) {
                     max = fspScoreMap.get(candidate).getNeuron(0);
                     argmax = candidate;

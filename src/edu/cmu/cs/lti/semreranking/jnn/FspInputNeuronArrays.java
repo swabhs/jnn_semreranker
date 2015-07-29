@@ -4,8 +4,8 @@ import jnn.mapping.OutputMappingStringArrayToDenseArray;
 import jnn.neuron.DenseNeuronArray;
 import jnn.training.GraphInference;
 import edu.cmu.cs.lti.semreranking.datastructs.Argument;
-import edu.cmu.cs.lti.semreranking.datastructs.Frame;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.utils.StringUtils;
 
@@ -16,9 +16,9 @@ public class FspInputNeuronArrays {
     public DenseNeuronArray[] frameArgIdsArray;
 
     public FspInputNeuronArrays(FspLookupTables lookupTables, ArrayParams ap,
-            GraphInference inference, Scored<FrameSemanticParse> scoredFsp) {
+            GraphInference inference, Scored<FrameSemAnalysis> scoredFsp) {
 
-        int numFrames = scoredFsp.entity.numFrames;
+        int numFrames = scoredFsp.entity.numFsps;
         int numArgs = scoredFsp.entity.numFrameArgs;
 
         // posArray = DenseNeuronArray.asArray(numFrames, ap.tokenInpDim);
@@ -32,7 +32,7 @@ public class FspInputNeuronArrays {
         int i = 0;
         int j = 0;
 
-        for (Frame frame : scoredFsp.entity.frames) {
+        for (FrameSemParse frame : scoredFsp.entity.frameSemParses) {
             frameIdsArray[i].setName(frame.id);
             frameIds[i] = frame.id;
             // posArray[i].setName("pos" + frame.id);

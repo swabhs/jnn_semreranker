@@ -1,23 +1,22 @@
 package edu.cmu.cs.lti.semreranking;
 
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
-public abstract class DataInstance {
-
+public abstract class NewDataInstance {
     public int numUniqueParses;
 
     public String[] tokens;
     public String[] posTags;
     public int size;
 
-    public DataInstance(int numParses, String[] tokens, String[] posTags) {
+    public NewDataInstance(int numParses, String[] tokens, String[] posTags) {
         this.numUniqueParses = numParses;
         this.tokens = tokens;
         this.posTags = posTags;
         this.size = tokens.length;
     }
 
-    public abstract Scored<FrameSemAnalysis> getParseAtRank(int rank);
+    public abstract Scored<FrameSemParse> getParseAtRank(int rank);
 
 }

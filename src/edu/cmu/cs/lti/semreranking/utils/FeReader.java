@@ -10,8 +10,8 @@ import com.google.common.collect.Sets;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
 import edu.cmu.cs.lti.semreranking.datastructs.Argument;
-import edu.cmu.cs.lti.semreranking.datastructs.Frame;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
 
 public class FeReader {
 
@@ -49,7 +49,7 @@ public class FeReader {
         posTags.add(posTag);
     }
 
-    public Frame getFrameFromFeLine(String feLine) {
+    public FrameSemParse getFrameFromFeLine(String feLine) {
         String[] feToks = feLine.trim().split("\t");
 
         double frameScore = Double.parseDouble(feToks[1]);
@@ -93,15 +93,15 @@ public class FeReader {
             }
         }
 
-        return new Frame(frameId, predStart, predEnd, predLexUnit, predToken, arguments, frameScore);
+        return new FrameSemParse(frameId, predStart, predEnd, predLexUnit, predToken, arguments, frameScore);
     }
 
-    public Multimap<Integer, FrameSemanticParse> readFeFile(String feFileName) {
+    public Multimap<Integer, FrameSemAnalysis> readFeFile(String feFileName) {
         List<String> feLines = BasicFileReader.readFile(feFileName);
 
         // map to example number
-        Multimap<Integer, FrameSemanticParse> exampleFspMap = HashMultimap.create();
-        List<Frame> frames = Lists.newArrayList();
+        Multimap<Integer, FrameSemAnalysis> exampleFspMap = HashMultimap.create();
+        List<FrameSemParse> frames = Lists.newArrayList();
 
         int corpusSentNum = Integer.parseInt(feLines.get(0).trim().split("\t")[7]);
         int prevSentNum = corpusSentNum;
@@ -112,7 +112,7 @@ public class FeReader {
 
             if (corpusSentNum != prevSentNum) { // new Sentence
 
-                exampleFspMap.put(prevSentNum, new FrameSemanticParse(frames));
+                exampleFspMap.put(prevSentNum, new FrameSemAnalysis(frames));
                 frames = Lists.newArrayList();
                 prevSentNum = corpusSentNum;
             }
@@ -120,7 +120,7 @@ public class FeReader {
             frames.add(getFrameFromFeLine(feLines.get(f)));
         }
 
-        exampleFspMap.put(corpusSentNum, new FrameSemanticParse(frames));
+        exampleFspMap.put(corpusSentNum, new FrameSemAnalysis(frames));
         return exampleFspMap;
     }
 

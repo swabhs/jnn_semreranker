@@ -2,34 +2,41 @@ package edu.cmu.cs.lti.semreranking.datastructs;
 
 import java.util.List;
 
-public class FrameSemanticParse {
+/**
+ * Frame-semantic analysis for a sentence. May contain more than one frame evoked by different
+ * targets in the sentence.
+ * 
+ * @author sswayamd
+ *
+ */
+public class FrameSemAnalysis {
 
-    public List<Frame> frames;
+    public List<FrameSemParse> frameSemParses;
 
-    public int numFrames;
+    public int numFsps;
     public int numFrameArgs;
 
     public double semaforScore;
 
-    public FrameSemanticParse(List<Frame> frames) {
-        this.frames = frames;
-        numFrames = frames.size();
+    public FrameSemAnalysis(List<FrameSemParse> frames) {
+        this.frameSemParses = frames;
+        numFsps = frames.size();
         numFrameArgs = 0;
         semaforScore = 0.0;
-        for (Frame f : frames) {
+        for (FrameSemParse f : frames) {
             numFrameArgs += f.numArgs;
             semaforScore += f.score;
         }
-        semaforScore /= numFrames;
+        semaforScore /= numFsps;
     }
 
     public String toString(int exNum) {
         StringBuilder builder = new StringBuilder();
         int i = 0;
-        for (Frame frame : frames) {
-            builder.append(frame.toString(exNum));
+        for (FrameSemParse frameSemParse : frameSemParses) {
+            builder.append(frameSemParse.toString(exNum));
             i++;
-            if (i != frames.size()) {
+            if (i != frameSemParses.size()) {
                 builder.append("\n");
             }
         }
@@ -37,8 +44,8 @@ public class FrameSemanticParse {
     }
 
     public void print() {
-        for (Frame frame : frames) {
-            frame.print();
+        for (FrameSemParse fsp : frameSemParses) {
+            fsp.print();
         }
     }
 
@@ -50,15 +57,15 @@ public class FrameSemanticParse {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        FrameSemanticParse other = (FrameSemanticParse) obj;
-        if (frames == null) {
-            if (other.frames != null)
+        FrameSemAnalysis other = (FrameSemAnalysis) obj;
+        if (frameSemParses == null) {
+            if (other.frameSemParses != null)
                 return false;
-        } else if (!frames.equals(other.frames))
+        } else if (!frameSemParses.equals(other.frameSemParses))
             return false;
         if (numFrameArgs != other.numFrameArgs)
             return false;
-        if (numFrames != other.numFrames)
+        if (numFsps != other.numFsps)
             return false;
 
         return true;

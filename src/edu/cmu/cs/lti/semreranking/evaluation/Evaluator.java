@@ -6,12 +6,12 @@ import java.util.Map;
 import com.google.common.collect.Lists;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
 public class Evaluator {
 
-    public static Result getRerankedMicroAvg(Map<Integer, Scored<FrameSemanticParse>> bestRanks) {
+    public static Result getRerankedMicroAvg(Map<Integer, Scored<FrameSemAnalysis>> bestRanks) {
 
         double pNumTotal = 0.0;
         double pDenomTotal = 0.0;
@@ -21,7 +21,7 @@ public class Evaluator {
 
         double avgf1 = 0.0;
         for (int ex : bestRanks.keySet()) {
-            Scored<FrameSemanticParse> fsp = (bestRanks.get(ex));
+            Scored<FrameSemAnalysis> fsp = (bestRanks.get(ex));
 
             pNumTotal += fsp.detailedFspScore.pnum;
             pDenomTotal += fsp.detailedFspScore.pdenom;
@@ -39,7 +39,7 @@ public class Evaluator {
     }
 
     public static void writeRerankedBest(
-            Map<Integer, Scored<FrameSemanticParse>> bestRanks,
+            Map<Integer, Scored<FrameSemAnalysis>> bestRanks,
             String feFileName,
             String rankFileName) {
         List<String> rankLines = Lists.newArrayList();
@@ -47,7 +47,7 @@ public class Evaluator {
         // List<String> feLines = Lists.newArrayList();
 
         for (int ex : bestRanks.keySet()) {
-            Scored<FrameSemanticParse> fsp = bestRanks.get(ex);
+            Scored<FrameSemAnalysis> fsp = bestRanks.get(ex);
             // feLines.add(fsp.entity.toString(ex));
             rankLines.add(ex + "\t" + fsp.origRank);
         }

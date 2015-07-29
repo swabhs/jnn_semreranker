@@ -2,14 +2,20 @@ package edu.cmu.cs.lti.semreranking.datastructs;
 
 import edu.cmu.cs.lti.semreranking.evaluation.Result;
 
-public class FspScore {
+/**
+ * Score given to the frame-semantic analysis of a sentence, according to the SemEval 2007 scheme
+ * 
+ * @author sswayamd
+ *
+ */
+public class FsaScore {
     public double pnum;
     public double pdenom;
     public double rnum;
     public double rdenom;
     public double fscore;
 
-    public FspScore(double pnum, double pdenom, double rnum, double rdenom, double fscore) {
+    public FsaScore(double pnum, double pdenom, double rnum, double rdenom, double fscore) {
         super();
         this.pnum = pnum;
         this.pdenom = pdenom;
@@ -18,7 +24,7 @@ public class FspScore {
         this.fscore = fscore;
     }
 
-    public FspScore(double pnum, double pdenom, double rnum, double rdenom) {
+    public FsaScore(double pnum, double pdenom, double rnum, double rdenom) {
         super();
         this.pnum = pnum;
         this.pdenom = pdenom;
@@ -27,7 +33,7 @@ public class FspScore {
         this.fscore = Result.getFscore(pnum, pdenom, rnum, rdenom);
     }
 
-    public FspScore() {
+    public FsaScore() {
         this.pnum = 0.0;
         this.pdenom = 0.0;
         this.rnum = 0.0;
@@ -61,7 +67,7 @@ public class FspScore {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        FspScore other = (FspScore) obj;
+        FsaScore other = (FsaScore) obj;
 
         if (Double.doubleToLongBits(pdenom) != Double.doubleToLongBits(other.pdenom))
             return false;

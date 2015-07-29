@@ -5,12 +5,12 @@ public class Scored<T> implements Comparable<Scored<T>> {
     public T entity;
     public Double fscore;
 
-    public FspScore detailedFspScore;
+    public FsaScore detailedFspScore;
 
     public double synScore;
     public int origRank; // rank as given by syntactic/semantic parser, NOT based on fscore
 
-    public Scored(T entity, FspScore fspScore, double synScore, int origRank) {
+    public Scored(T entity, FsaScore fspScore, double synScore, int origRank) {
         this.entity = entity;
         this.fscore = fspScore.fscore;
         this.detailedFspScore = fspScore;

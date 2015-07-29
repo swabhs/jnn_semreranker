@@ -16,10 +16,10 @@ import edu.cmu.cs.lti.semreranking.TestInstance;
 import edu.cmu.cs.lti.semreranking.TrainData;
 import edu.cmu.cs.lti.semreranking.TrainInstance;
 import edu.cmu.cs.lti.semreranking.datastructs.Argument;
-import edu.cmu.cs.lti.semreranking.datastructs.Frame;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameNetVocabs;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
-import edu.cmu.cs.lti.semreranking.datastructs.FspScore;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FsaScore;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.lossfunctions.PairwiseLoss;
 import edu.cmu.cs.lti.semreranking.utils.FileUtils.AllRerankingData;
@@ -52,26 +52,26 @@ public class FspRerankerAppTest {
                 StringUtils.makeFrameArgId("STOCK", "plural"),
                 StringUtils.makeFrameArgId("BUY", "buyer"),
                 StringUtils.makeFrameArgId("BUY", "goods"));
-        Frame frame1 = new Frame("BANKER", 2, 2, "banker.n", "banker", Sets.newHashSet(arg1), 1.5);
-        Frame frame2 = new Frame("STOCK", 5, 5, "stocks.n", "stocks", Sets.newHashSet(arg2, arg3),
+        FrameSemParse frame1 = new FrameSemParse("BANKER", 2, 2, "banker.n", "banker", Sets.newHashSet(arg1), 1.5);
+        FrameSemParse frame2 = new FrameSemParse("STOCK", 5, 5, "stocks.n", "stocks", Sets.newHashSet(arg2, arg3),
                 1.3);
-        Frame frame3 = new Frame("BUY", 5, 5, "purchases.v", "purchases", Sets.newHashSet(arg4,
+        FrameSemParse frame3 = new FrameSemParse("BUY", 5, 5, "purchases.v", "purchases", Sets.newHashSet(arg4,
                 arg5), 2.0);
-        Frame frame4 = new Frame("STOCK", 5, 5, "stocks.n", "stocks", Sets.newHashSet(arg2), 0.8);
-        Frame frame5 = new Frame("BUY", 5, 5, "purchases.v", "purchases", Sets.newHashSet(arg4),
+        FrameSemParse frame4 = new FrameSemParse("STOCK", 5, 5, "stocks.n", "stocks", Sets.newHashSet(arg2), 0.8);
+        FrameSemParse frame5 = new FrameSemParse("BUY", 5, 5, "purchases.v", "purchases", Sets.newHashSet(arg4),
                 1.0);
 
-        FrameSemanticParse fsp1 = new FrameSemanticParse(Arrays.asList(frame1, frame2, frame3));
-        FrameSemanticParse fsp2 = new FrameSemanticParse(Arrays.asList(frame1, frame4, frame3));
-        FrameSemanticParse fsp3 = new FrameSemanticParse(Arrays.asList(frame1, frame2, frame5));
-        Scored<FrameSemanticParse> scored1 = new Scored<FrameSemanticParse>(fsp1, new FspScore(5,
+        FrameSemAnalysis fsp1 = new FrameSemAnalysis(Arrays.asList(frame1, frame2, frame3));
+        FrameSemAnalysis fsp2 = new FrameSemAnalysis(Arrays.asList(frame1, frame4, frame3));
+        FrameSemAnalysis fsp3 = new FrameSemAnalysis(Arrays.asList(frame1, frame2, frame5));
+        Scored<FrameSemAnalysis> scored1 = new Scored<FrameSemAnalysis>(fsp1, new FsaScore(5,
                 5, 5, 5), 20.0, 1);
-        Scored<FrameSemanticParse> scored2 = new Scored<FrameSemanticParse>(fsp2, new FspScore(4,
+        Scored<FrameSemAnalysis> scored2 = new Scored<FrameSemAnalysis>(fsp2, new FsaScore(4,
                 5, 4, 5), 20.0, 2);
-        Scored<FrameSemanticParse> scored3 = new Scored<FrameSemanticParse>(fsp3, new FspScore(4,
+        Scored<FrameSemAnalysis> scored3 = new Scored<FrameSemAnalysis>(fsp3, new FsaScore(4,
                 5, 4, 5), 20.0, 3);
 
-        List<Scored<FrameSemanticParse>> sortedParses = Lists.newArrayList();
+        List<Scored<FrameSemAnalysis>> sortedParses = Lists.newArrayList();
         sortedParses.add(scored1);
         sortedParses.add(scored2);
         sortedParses.add(scored3);
@@ -81,7 +81,7 @@ public class FspRerankerAppTest {
                 frameIds, argIds);
         trainData = new TrainData(Arrays.asList(instance), sortedParses.size());
 
-        List<Scored<FrameSemanticParse>> unsortedParses = Arrays.asList(scored2, scored3, scored1);
+        List<Scored<FrameSemAnalysis>> unsortedParses = Arrays.asList(scored2, scored3, scored1);
         TestInstance testInst = new TestInstance(tokens, posTags, unsortedParses);
         List<TestInstance> testInstances = Lists.newArrayList();
         testInstances.add(0, testInst);
@@ -94,7 +94,7 @@ public class FspRerankerAppTest {
 
     @Test
     public void testDoDeepDecoding() {
-        Map<Integer, Scored<FrameSemanticParse>> result = reranker.doDeepDecoding(testData);
+        Map<Integer, Scored<FrameSemAnalysis>> result = reranker.doDeepDecoding(testData);
         for (int ex : result.keySet()) {
             System.err.println(ex + "\t" + result.get(ex).toString());
         }

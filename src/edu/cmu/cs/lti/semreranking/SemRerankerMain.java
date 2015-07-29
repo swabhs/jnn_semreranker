@@ -10,7 +10,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 import edu.cmu.cs.lti.semreranking.datastructs.FrameNetVocabs;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.evaluation.Evaluator;
 import edu.cmu.cs.lti.semreranking.evaluation.Oracle;
@@ -96,7 +96,7 @@ public class SemRerankerMain {
 
         System.err.println("\n\nPerforming Deep Learning:");
         FspRerankerApp reranker = new FspRerankerApp(allData, new LogLoss());
-        Map<Integer, Scored<FrameSemanticParse>> bestParses = reranker
+        Map<Integer, Scored<FrameSemAnalysis>> bestParses = reranker
                 .doDeepDecoding(allData.testData);
 
         System.err.print(

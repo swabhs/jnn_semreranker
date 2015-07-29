@@ -21,7 +21,7 @@ import edu.cmu.cs.lti.semreranking.SemRerankerMain;
 import edu.cmu.cs.lti.semreranking.TestData;
 import edu.cmu.cs.lti.semreranking.TestInstance;
 import edu.cmu.cs.lti.semreranking.TrainData;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.utils.FeReader;
 import edu.cmu.cs.lti.semreranking.utils.FileUtils;
@@ -70,7 +70,7 @@ public class Oracle {
                 if (rank >= inst.numUniqueParses) {
                     break;
                 }
-                Scored<FrameSemanticParse> fsp = inst.getParseAtRank(rank);
+                Scored<FrameSemAnalysis> fsp = inst.getParseAtRank(rank);
                 if (fsp.fscore > maxF) {
                     maxF = fsp.fscore;
                     pNum = fsp.detailedFspScore.pnum;
@@ -115,7 +115,7 @@ public class Oracle {
                 if (rank >= inst.numUniqueParses) {
                     break;
                 }
-                Scored<FrameSemanticParse> fsp = inst.getParseAtRank(rank);
+                Scored<FrameSemAnalysis> fsp = inst.getParseAtRank(rank);
                 if (fsp.fscore < minF) {
                     minF = fsp.fscore;
                     pNum = fsp.detailedFspScore.pnum;
@@ -154,7 +154,7 @@ public class Oracle {
             double rNum = 0.0;
             double rDenom = 0.0;
             int rank = (int) (Math.random() * inst.numUniqueParses);
-            Scored<FrameSemanticParse> fsp = inst.getParseAtRank(rank);
+            Scored<FrameSemAnalysis> fsp = inst.getParseAtRank(rank);
 
             pNum = fsp.detailedFspScore.pnum;
             pDenom = fsp.detailedFspScore.pdenom;
@@ -241,7 +241,7 @@ public class Oracle {
             int bestRank = -1;
 
             for (int rank = 0; rank < inst.numUniqueParses; rank++) {
-                Scored<FrameSemanticParse> fsp = inst.getParseAtRank(rank);
+                Scored<FrameSemAnalysis> fsp = inst.getParseAtRank(rank);
                 if (fsp.fscore > maxF) {
                     maxF = fsp.fscore;
                     bestRank = rank;
@@ -288,7 +288,7 @@ public class Oracle {
         double rDenomTotal = 0.0;
 
         for (int exNum = 0; exNum < data.size; exNum++) {
-            Scored<FrameSemanticParse> fsp = data.trainInstances.get(exNum).getUnsortedParseAtRank(
+            Scored<FrameSemAnalysis> fsp = data.trainInstances.get(exNum).getUnsortedParseAtRank(
                     0);
 
             macrof1 += fsp.fscore;
@@ -322,7 +322,7 @@ public class Oracle {
                 "training/data/emnlp2015/semreranker." + dataSet
                 + ".sentences.turboparsed.basic.stanford.lemmatized.conll";
         SentsAndToks testSentsAndToks = FileUtils.readConlls(conllFile);
-        Map<Integer, List<Scored<FrameSemanticParse>>> allTestFsps =
+        Map<Integer, List<Scored<FrameSemAnalysis>>> allTestFsps =
                 FileUtils.readTest(xmlDir, feDir, synDir, new FeReader());
         int numTestRanks = allTestFsps.entrySet().iterator().next().getValue().size();
 
@@ -332,7 +332,7 @@ public class Oracle {
 
         List<TestInstance> testInstances = Lists.newArrayList();
         for (int ex : allTestFsps.keySet()) {
-            List<Scored<FrameSemanticParse>> unsortedParses = allTestFsps.get(ex);
+            List<Scored<FrameSemAnalysis>> unsortedParses = allTestFsps.get(ex);
             testInstances.add(new TestInstance(testSentsAndToks.allLemmas.get(ex),
                     testSentsAndToks.allPostags.get(ex),
                     unsortedParses));

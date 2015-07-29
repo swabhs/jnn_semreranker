@@ -15,8 +15,8 @@ import com.google.common.collect.Multimap;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
 import edu.cmu.cs.lti.semreranking.DataPaths;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
-import edu.cmu.cs.lti.semreranking.datastructs.FspScore;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FsaScore;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.utils.FeReader;
 import edu.cmu.cs.lti.semreranking.utils.FileUtils;
@@ -44,7 +44,7 @@ public class MiniDataGenerator {
     public static NumberFormat formatter = new DecimalFormat("#0.00000");
 
     static void makeMiniDataSet(
-            Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> allFsps,
+            Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> allFsps,
             String feDir,
             String semaforResultsDir,
             int numExamples) {
@@ -63,7 +63,7 @@ public class MiniDataGenerator {
             int exNum = 0;
             for (int row : allFsps.keySet()) {
                 if (allFsps.get(row).containsKey(col)) {
-                    for (Scored<FrameSemanticParse> scoFsp : allFsps.get(row).get(col)) {
+                    for (Scored<FrameSemAnalysis> scoFsp : allFsps.get(row).get(col)) {
                         feLines.add(scoFsp.entity.toString(row));
                         // TODO: BUGS AHOY, division by a possible 0.0
                         fscoreLines.add(row
@@ -105,7 +105,7 @@ public class MiniDataGenerator {
         for (String dataset : dataSetSizes.keySet()) {
 
             DataPaths paths = new DataPaths(false, dataset);
-            Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> scoredFsps = readScoredFsps(
+            Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> scoredFsps = readScoredFsps(
                     paths.semaforResultsDir,
                     paths.semaforOutFEDir,
                     paths.synScoresDir);
@@ -129,14 +129,14 @@ public class MiniDataGenerator {
         feDirFile.mkdir();
     }
 
-    public static Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> readScoredFsps(
+    public static Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> readScoredFsps(
             String xmlDir, String feDir, String synDir) {
 
         System.err.println("Reading data from...");
         System.err.println(feDir);
         System.err.println(xmlDir);
 
-        Map<Integer, Multimap<Integer, Scored<FrameSemanticParse>>> exRanksMap = Maps.newHashMap();
+        Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> exRanksMap = Maps.newHashMap();
         int numRanks = new File(feDir).listFiles().length;
 
         for (int rank = 0; rank < numRanks; rank++) {
@@ -144,24 +144,24 @@ public class MiniDataGenerator {
             String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
             String synFileName = synDir + rank + DataPaths.SYNSCORE_FILE_EXTN;
 
-            Multimap<Integer, FrameSemanticParse> fsps = new FeReader().readFeFile(feFileName);
-            Map<Integer, FspScore> framescores = FileUtils.readFscoreFile(xmlFileName);
+            Multimap<Integer, FrameSemAnalysis> fsps = new FeReader().readFeFile(feFileName);
+            Map<Integer, FsaScore> framescores = FileUtils.readFscoreFile(xmlFileName);
             Map<Integer, Double> synScores = FileUtils.readSynScoreFile(synFileName);
 
             for (int exNum : fsps.keySet()) {
-                Multimap<Integer, Scored<FrameSemanticParse>> allRanks = null;
+                Multimap<Integer, Scored<FrameSemAnalysis>> allRanks = null;
                 if (exRanksMap.containsKey(exNum) == false) {
                     allRanks = HashMultimap.create();
                     exRanksMap.put(exNum, allRanks);
                 }
                 allRanks = exRanksMap.get(exNum);
-                for (FrameSemanticParse fsp : fsps.get(exNum)) {
-                    Scored<FrameSemanticParse> scoFsp = null;
+                for (FrameSemAnalysis fsp : fsps.get(exNum)) {
+                    Scored<FrameSemAnalysis> scoFsp = null;
                     if (framescores.containsKey(exNum) == false) {
-                        scoFsp = new Scored<FrameSemanticParse>(
-                                fsp, new FspScore(), synScores.get(exNum), rank);
+                        scoFsp = new Scored<FrameSemAnalysis>(
+                                fsp, new FsaScore(), synScores.get(exNum), rank);
                     } else {
-                        scoFsp = new Scored<FrameSemanticParse>(
+                        scoFsp = new Scored<FrameSemAnalysis>(
                                 fsp, framescores.get(exNum), synScores.get(exNum), rank);
                     }
                     allRanks.put(rank, scoFsp);

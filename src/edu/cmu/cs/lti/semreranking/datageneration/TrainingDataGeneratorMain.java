@@ -12,8 +12,8 @@ import edu.cmu.cs.lti.nlp.swabha.basic.Conll;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
 import edu.cmu.cs.lti.semreranking.SemRerankerMain;
-import edu.cmu.cs.lti.semreranking.datastructs.Frame;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemanticParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
 import edu.cmu.cs.lti.semreranking.utils.FeReader;
 
 public class TrainingDataGeneratorMain {
@@ -47,7 +47,7 @@ public class TrainingDataGeneratorMain {
         allToks = allToks.subList(1, allToks.size());
 
         FeReader reader = new FeReader();
-        Multimap<Integer, FrameSemanticParse> allFes = reader.readFeFile(feFile); // TODO
+        Multimap<Integer, FrameSemAnalysis> allFes = reader.readFeFile(feFile); // TODO
 
         List<Integer> randomizedOrder = readRandomList(outDir + "train+dev.sents.order"); // generateRandomList(allGoldXmls.size());
 
@@ -62,7 +62,7 @@ public class TrainingDataGeneratorMain {
             List<String> xmlOutLines = Lists.newArrayList();
             List<Conll> outConlls = Lists.newArrayList();
             List<String> outToks = Lists.newArrayList();
-            Map<Integer, FrameSemanticParse> outFsps = Maps.newTreeMap();
+            Map<Integer, FrameSemAnalysis> outFsps = Maps.newTreeMap();
 
             xmlOutLines.add(header);
             for (int testIdx = 0; testIdx < foldSize; testIdx++) {
@@ -92,7 +92,7 @@ public class TrainingDataGeneratorMain {
             // TRAIN FILES
             List<Conll> trainOutConlls = Lists.newArrayList();
             List<String> trainOutToks = Lists.newArrayList();
-            Map<Integer, FrameSemanticParse> trainOutFsps = Maps.newTreeMap();
+            Map<Integer, FrameSemAnalysis> trainOutFsps = Maps.newTreeMap();
 
             int idx = 0;
             for (int testIdx = 0; testIdx < allGoldXmls.size(); testIdx++) {
@@ -183,7 +183,7 @@ public class TrainingDataGeneratorMain {
         return allXmls;
     }
 
-    public static void writeFeLines(Map<Integer, FrameSemanticParse> fsps, String fileName) {
+    public static void writeFeLines(Map<Integer, FrameSemAnalysis> fsps, String fileName) {
         List<String> feLines = Lists.newArrayList();
         for (int i : fsps.keySet()) {
             feLines.add(fsps.get(i).toString(i));
@@ -191,11 +191,11 @@ public class TrainingDataGeneratorMain {
         BasicFileWriter.writeStrings(feLines, fileName);
     }
 
-    public static void writeFramesLines(Map<Integer, FrameSemanticParse> fsps, String fileName) {
+    public static void writeFramesLines(Map<Integer, FrameSemAnalysis> fsps, String fileName) {
         List<String> feLines = Lists.newArrayList();
         for (int i : fsps.keySet()) {
-            FrameSemanticParse fsp = fsps.get(i);
-            for (Frame frame : fsp.frames) {
+            FrameSemAnalysis fsp = fsps.get(i);
+            for (FrameSemParse frame : fsp.frameSemParses) {
                 StringBuilder builder = new StringBuilder();
                 builder.append("1\t");
                 builder.append(frame.score);

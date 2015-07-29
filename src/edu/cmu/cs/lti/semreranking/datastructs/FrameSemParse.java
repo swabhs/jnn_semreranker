@@ -2,7 +2,7 @@ package edu.cmu.cs.lti.semreranking.datastructs;
 
 import java.util.Set;
 
-public class Frame {
+public class FrameSemParse {
     public final String id;
     public final int predStartPos;
     public final int predEndPos;
@@ -16,7 +16,7 @@ public class Frame {
 
     public double score;
 
-    public Frame(
+    public FrameSemParse(
             String id,
             int predStartPos,
             int predEndPos,
@@ -92,7 +92,7 @@ public class Frame {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Frame other = (Frame) obj;
+        FrameSemParse other = (FrameSemParse) obj;
         if (arguments == null) {
             if (other.arguments != null)
                 return false;
