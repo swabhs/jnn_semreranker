@@ -1,16 +1,26 @@
 package edu.cmu.cs.lti.semreranking;
 
+import java.util.List;
+import java.util.Set;
+
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
+
 public abstract class Data {
 
-    public int size;
-    public double avgNumRanks;
-    public int numTotParses;
+    public List<String[]> tokens;
+    public List<String[]> posTags;
 
-    public Data(int size, int numTotParses) {
-        this.size = size;
-        this.numTotParses = numTotParses;
+    public int numInstances; // num of IID examples in the data
+    public int numRanks; // typically k=100 for our experiments
+    public double avgNumRanks; // set in the inherited classes
+
+    public Data(List<String[]> tokens, List<String[]> posTags, int numInstances, int numRanks) {
+        this.tokens = tokens;
+        this.posTags = posTags;
+        this.numInstances = numInstances;
+        this.numRanks = numRanks;
     }
 
-    public abstract DataInstance getInstance(int exNum);
-
+    public abstract Set<FrameIdentifier> getFramesInEx(int exNum);
+    public abstract DataInstance getInstance(int exNum, FrameIdentifier identifier);
 }

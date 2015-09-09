@@ -3,6 +3,7 @@ package edu.cmu.cs.lti.semreranking.datageneration;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -13,13 +14,17 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
+import edu.cmu.cs.lti.nlp.swabha.basic.Conll;
+import edu.cmu.cs.lti.nlp.swabha.basic.Pair;
+import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
 import edu.cmu.cs.lti.semreranking.DataPaths;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
-import edu.cmu.cs.lti.semreranking.datastructs.FsaScore;
-import edu.cmu.cs.lti.semreranking.datastructs.Scored;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
+import edu.cmu.cs.lti.semreranking.datastructs.SemevalScore;
 import edu.cmu.cs.lti.semreranking.utils.FeReader;
-import edu.cmu.cs.lti.semreranking.utils.FileUtils;
+import edu.cmu.cs.lti.semreranking.utils.ResultsFileUtils;
+import edu.cmu.cs.lti.semreranking.utils.SynScoreReader;
 
 /**
  * Given the semafor k-best results directory, creates a list of fsps sorted by f-score and writes
@@ -43,134 +48,198 @@ public class MiniDataGenerator {
 
     public static NumberFormat formatter = new DecimalFormat("#0.00000");
 
-    static void makeMiniDataSet(
-            Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> allFsps,
-            String feDir,
-            String semaforResultsDir,
-            int numExamples) {
-
-        System.err.println("\nMaking mini dataset with " + numExamples + " examples with "
-                + numRanks + " ranks here...");
-
-        createDirectory(feDir);
-        createDirectory(semaforResultsDir);
-
-        for (int col = 0; col < numRanks; col++) {
-            List<String> feLines = Lists.newArrayList();
-            List<String> fscoreLines = Lists.newArrayList();
-            fscoreLines.add("Sentence ID\tFscore\tFscore\tFscore");
-
-            int exNum = 0;
-            for (int row : allFsps.keySet()) {
-                if (allFsps.get(row).containsKey(col)) {
-                    for (Scored<FrameSemAnalysis> scoFsp : allFsps.get(row).get(col)) {
-                        feLines.add(scoFsp.entity.toString(row));
-                        // TODO: BUGS AHOY, division by a possible 0.0
-                        fscoreLines.add(row
-                                + "\t"
-                                + formatter.format(scoFsp.detailedFspScore.rnum
-                                        / scoFsp.detailedFspScore.rdenom)
-                                + "("
-                                + (scoFsp.detailedFspScore.rnum)
-                                + "/"
-                                + (scoFsp.detailedFspScore.rdenom)
-                                + ")\t"
-                                + formatter.format(scoFsp.detailedFspScore.pnum
-                                        / scoFsp.detailedFspScore.pdenom) + "("
-                                + (scoFsp.detailedFspScore.pnum) + "/"
-                                + (scoFsp.detailedFspScore.pdenom) + ")\t"
-                                + scoFsp.fscore);
-                    }
-                    exNum++;
-                }
-                if (exNum == numExamples) {
-                    break;
-                }
-            }
-            BasicFileWriter.writeStrings(feLines, feDir + col + DataPaths.FE_FILE_EXTN);
-            BasicFileWriter.writeStrings(fscoreLines, semaforResultsDir + col
-                    + DataPaths.RESULTS_FILE_EXTN);
-        }
-        System.err.println();
-    }
-
     public static void main(String[] args) {
         new JCommander(new MiniDataGenerator(), args);
 
         Map<String, Integer> dataSetSizes = Maps.newHashMap();
         dataSetSizes.put("train", trainSize);
         dataSetSizes.put("dev", devSize);
-        dataSetSizes.put("test", testSize);
+        // dataSetSizes.put("test", testSize);
 
         for (String dataset : dataSetSizes.keySet()) {
-
-            DataPaths paths = new DataPaths(false, dataset);
-            Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> scoredFsps = readScoredFsps(
-                    paths.semaforResultsDir,
-                    paths.semaforOutFEDir,
-                    paths.synScoresDir);
-
+            DataPaths inPaths = new DataPaths(false, dataset);
             DataPaths outpaths = new DataPaths(true, dataset);
-            makeMiniDataSet(
-                    scoredFsps,
-                    outpaths.semaforOutFEDir,
-                    outpaths.semaforResultsDir,
-                    dataSetSizes.get(dataset));
+            makeMiniDataSet(inPaths, outpaths, dataSetSizes.get(dataset));
         }
-
     }
 
-    public static void createDirectory(String fileName) {
+    static void makeMiniDataSet(DataPaths inPaths, DataPaths outPaths, int numExamples) {
+        System.err.println("Reading data from...\n" + inPaths.toString());
+        System.err.println("\nMaking mini dataset with " + numExamples + " examples with "
+                + numRanks + " ranks here...");
+
+        List<Integer> selectedEx = makeMiniTokenizedFile(inPaths, outPaths, numExamples);
+        System.out.println(selectedEx);
+        makeMiniConllFile(inPaths, outPaths, selectedEx);
+        makeMiniSynScoreFiles(inPaths, outPaths, selectedEx);
+
+        makeMiniFEs(inPaths, outPaths, selectedEx);
+        makeMiniResults(inPaths, outPaths, selectedEx);
+    }
+
+    static void makeMiniFEs(DataPaths inPaths, DataPaths outPaths, List<Integer> selectEx) {
+        // read all the FEs
+        Map<Integer, Map<FrameIdentifier, List<FrameSemParse>>> kbestFspsMap = new FeReader()
+                .readAllFeFiles(inPaths.semaforOutFEDir);
+        createDirectory(outPaths.semaforOutFEDir);
+
+        Map<Integer, Multimap<Integer, FrameSemParse>> rankedParseLists = Maps.newHashMap();
+
+        int writtenEx = 0;
+        for (int ex : selectEx) {
+            if (kbestFspsMap.containsKey(ex) == false) {
+                ++writtenEx;
+                continue;
+            }
+            for (FrameIdentifier id : kbestFspsMap.get(ex).keySet()) {
+                for (int rank = 0; rank < numRanks; rank++) {
+                    Multimap<Integer, FrameSemParse> parses = null;
+                    if (rankedParseLists.containsKey(rank)) {
+                        parses = rankedParseLists.get(rank);
+                    } else {
+                        parses = HashMultimap.create();
+                    }
+                    parses.put(writtenEx, kbestFspsMap.get(ex).get(id).get(rank));
+                    rankedParseLists.put(rank, parses);
+                }
+            }
+            ++writtenEx;
+        }
+
+        for (int rank : rankedParseLists.keySet()) {
+            List<String> lines = Lists.newArrayList();
+            for (int exNum : rankedParseLists.get(rank).keySet()) {
+                for (FrameSemParse parse : rankedParseLists.get(rank).get(exNum)) {
+                    lines.add(parse.toString(exNum));
+                }
+            }
+            BasicFileWriter.writeStrings(lines, outPaths.semaforOutFEDir + "/" + rank
+                    + DataPaths.FE_FILE_EXTN);
+        }
+        System.err.println("Wrote " + writtenEx + " FEs");
+    }
+
+    public static void makeMiniResults(DataPaths inPaths, DataPaths outPaths, List<Integer> selectEx) {
+        Map<Integer, Map<FrameIdentifier, List<SemevalScore>>> kbestFscoMap = ResultsFileUtils
+                .readAllFscores(inPaths.tokFile, inPaths.semaforResultsDir);
+
+        createDirectory(outPaths.semaforResultsDir);
+        Map<Integer, Multimap<Integer, Pair<FrameIdentifier, SemevalScore>>> rankedResultLists = Maps
+                .newHashMap();
+
+        int writtenEx = 0;
+        for (int ex : selectEx) {
+            if (kbestFscoMap.containsKey(ex) == false) {
+                ++writtenEx;
+                continue;
+            }
+            for (FrameIdentifier id : kbestFscoMap.get(ex).keySet()) {
+                for (int rank = 0; rank < numRanks; rank++) {
+                    Multimap<Integer, Pair<FrameIdentifier, SemevalScore>> resultList = null;
+                    if (rankedResultLists.containsKey(rank)) {
+                        resultList = rankedResultLists.get(rank);
+                    } else {
+                        resultList = HashMultimap.create();
+                    }
+                    resultList.put(writtenEx,
+                            new Pair<FrameIdentifier, SemevalScore>(
+                                    id, kbestFscoMap.get(ex).get(id).get(rank)));
+                    rankedResultLists.put(rank, resultList);
+                }
+            }
+            ++writtenEx;
+        }
+
+        for (int rank : rankedResultLists.keySet()) {
+            List<String> lines = Lists.newArrayList();
+            lines.add("Sent#\tFrame-ID\tRecall\tPrecision\tFscore");
+            for (int ex : rankedResultLists.get(rank).keySet()) {
+                for (Pair<FrameIdentifier, SemevalScore> pair : rankedResultLists.get(rank).get(ex)) {
+                    lines.add(ResultsFileUtils.getFscoreLine(pair.first, pair.second, ex));
+                }
+            }
+            BasicFileWriter.writeStrings(lines, outPaths.semaforResultsDir + "/" + rank
+                    + DataPaths.RESULTS_FILE_EXTN);
+        }
+        System.err.println("Wrote " + writtenEx + " results");
+    }
+
+    public static void makeMiniSynScoreFiles(DataPaths inPaths, DataPaths outPaths,
+            List<Integer> selectedEx) {
+        Map<Integer, List<Double>> kbestSynScoresMap = SynScoreReader.readAllSynScores(
+                inPaths.synScoresDir);
+
+        createDirectory(outPaths.synScoresDir);
+        Map<Integer, Map<Integer, Double>> rankedSynscoreList = Maps.newHashMap();
+
+        int writtenEx = 0;
+        for (int ex : selectedEx) {
+            if (kbestSynScoresMap.containsKey(ex) == false) {
+                ++writtenEx;
+                continue;
+            }
+            for (int rank = 0; rank < numRanks; rank++) {
+                Map<Integer, Double> synScoreMap = null;
+                if (rankedSynscoreList.containsKey(rank)) {
+                    synScoreMap = rankedSynscoreList.get(rank);
+                } else {
+                    synScoreMap = Maps.newHashMap();
+                }
+                synScoreMap.put(writtenEx, kbestSynScoresMap.get(ex).get(rank));
+                rankedSynscoreList.put(rank, synScoreMap);
+            }
+            writtenEx++;
+        }
+
+        for (int rank : rankedSynscoreList.keySet()) {
+            List<String> lines = Lists.newArrayList();
+            lines.add("Sentence ID\tTurboScore");
+            for (int ex : rankedSynscoreList.get(rank).keySet()) {
+                lines.add(ex + "\t" + rankedSynscoreList.get(rank).get(ex));
+            }
+            BasicFileWriter.writeStrings(lines, outPaths.synScoresDir + "/" + rank
+                    + DataPaths.SYNSCORE_FILE_EXTN);
+        }
+        System.err.println("Wrote " + writtenEx + " syn scores");
+    }
+
+    static List<Integer> makeMiniTokenizedFile(DataPaths inPaths, DataPaths outPaths, int numEx) {
+        List<String> fullDataSetSents = BasicFileReader.readFile(inPaths.tokFile);
+        List<Integer> selectedEx = createRandomSubset(fullDataSetSents.size(), numEx);
+
+        List<String> selectedSents = Lists.newArrayList();
+        for (int idx : selectedEx) {
+            selectedSents.add(fullDataSetSents.get(idx));
+        }
+        BasicFileWriter.writeStrings(selectedSents, outPaths.tokFile);
+        return selectedEx;
+    }
+
+    static void makeMiniConllFile(DataPaths inPaths, DataPaths outPaths,
+            List<Integer> selectedEx) {
+        List<Conll> inConlls = BasicFileReader.readConllFile(inPaths.conllFile);
+        List<Conll> selectedConlls = Lists.newArrayList();
+        for (int i : selectedEx) {
+            selectedConlls.add(inConlls.get(i));
+        }
+        BasicFileWriter.writeConll(selectedConlls, outPaths.conllFile);
+    }
+
+    static List<Integer> createRandomSubset(int maxSize, int sizeWanted) {
+        List<Integer> fullSet = Lists.newArrayList();
+        for (int i = 0; i < maxSize; i++) {
+            fullSet.add(i);
+        }
+        Collections.shuffle(fullSet);
+        return fullSet.subList(0, sizeWanted);
+    }
+
+    static void createDirectory(String fileName) {
         System.err.println("Creating directory : " + fileName);
         File feDirFile = new File(fileName);
         if (feDirFile.exists()) {
             feDirFile.delete();
         }
         feDirFile.mkdir();
-    }
-
-    public static Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> readScoredFsps(
-            String xmlDir, String feDir, String synDir) {
-
-        System.err.println("Reading data from...");
-        System.err.println(feDir);
-        System.err.println(xmlDir);
-
-        Map<Integer, Multimap<Integer, Scored<FrameSemAnalysis>>> exRanksMap = Maps.newHashMap();
-        int numRanks = new File(feDir).listFiles().length;
-
-        for (int rank = 0; rank < numRanks; rank++) {
-            String xmlFileName = xmlDir + rank + DataPaths.RESULTS_FILE_EXTN;
-            String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
-            String synFileName = synDir + rank + DataPaths.SYNSCORE_FILE_EXTN;
-
-            Multimap<Integer, FrameSemAnalysis> fsps = new FeReader().readFeFile(feFileName);
-            Map<Integer, FsaScore> framescores = FileUtils.readFscoreFile(xmlFileName);
-            Map<Integer, Double> synScores = FileUtils.readSynScoreFile(synFileName);
-
-            for (int exNum : fsps.keySet()) {
-                Multimap<Integer, Scored<FrameSemAnalysis>> allRanks = null;
-                if (exRanksMap.containsKey(exNum) == false) {
-                    allRanks = HashMultimap.create();
-                    exRanksMap.put(exNum, allRanks);
-                }
-                allRanks = exRanksMap.get(exNum);
-                for (FrameSemAnalysis fsp : fsps.get(exNum)) {
-                    Scored<FrameSemAnalysis> scoFsp = null;
-                    if (framescores.containsKey(exNum) == false) {
-                        scoFsp = new Scored<FrameSemAnalysis>(
-                                fsp, new FsaScore(), synScores.get(exNum), rank);
-                    } else {
-                        scoFsp = new Scored<FrameSemAnalysis>(
-                                fsp, framescores.get(exNum), synScores.get(exNum), rank);
-                    }
-                    allRanks.put(rank, scoFsp);
-                }
-                exRanksMap.put(exNum, allRanks);
-            }
-        }
-
-        System.err.println("Number of examples read = " + exRanksMap.keySet().size());
-        return exRanksMap;
     }
 }

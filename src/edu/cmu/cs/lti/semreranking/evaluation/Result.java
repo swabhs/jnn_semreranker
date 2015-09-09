@@ -60,4 +60,8 @@ public class Result implements Comparable<Result> {
         return 2.0 * precision * recall / (precision + recall);
     }
 
+    public static double getRecallOrPrec(double num, double denom) {
+        return denom == 0.0 ? 0.0 : num / denom;
+    }
+
 }

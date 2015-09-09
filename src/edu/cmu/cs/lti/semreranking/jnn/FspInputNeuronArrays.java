@@ -4,10 +4,10 @@ import jnn.mapping.OutputMappingStringArrayToDenseArray;
 import jnn.neuron.DenseNeuronArray;
 import jnn.training.GraphInference;
 import edu.cmu.cs.lti.semreranking.datastructs.Argument;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
-import edu.cmu.cs.lti.semreranking.utils.StringUtils;
+import edu.cmu.cs.lti.semreranking.utils.FormatUtils;
 
 public class FspInputNeuronArrays {
 
@@ -16,10 +16,10 @@ public class FspInputNeuronArrays {
     public DenseNeuronArray[] frameArgIdsArray;
 
     public FspInputNeuronArrays(FspLookupTables lookupTables, ArrayParams ap,
-            GraphInference inference, Scored<FrameSemAnalysis> scoredFsp) {
+            GraphInference inference, FrameSemAnalysis fsa) {
 
-        int numFrames = scoredFsp.entity.numFsps;
-        int numArgs = scoredFsp.entity.numFrameArgs;
+        int numFrames = fsa.numFsps;
+        int numArgs = fsa.numFrameArgs;
 
         // posArray = DenseNeuronArray.asArray(numFrames, ap.tokenInpDim);
         frameIdsArray = DenseNeuronArray.asArray(numFrames, ap.frameIdInpDim);
@@ -32,14 +32,15 @@ public class FspInputNeuronArrays {
         int i = 0;
         int j = 0;
 
-        for (FrameSemParse frame : scoredFsp.entity.frameSemParses) {
+        for (Scored<FrameSemParse> scoredFrame : fsa.frameSemParses) {
+            FrameSemParse frame = scoredFrame.entity;
             frameIdsArray[i].setName(frame.id);
             frameIds[i] = frame.id;
             // posArray[i].setName("pos" + frame.id);
             predPostags[i] = frame.predPosTag;
 
             for (Argument arg : frame.arguments) {
-                String frameArgId = StringUtils.makeFrameArgId(frame.id, arg.id);
+                String frameArgId = FormatUtils.makeFrameArgId(frame.id, arg.id);
                 frameArgIdsArray[j].setName(frameArgId);
                 frameArgIds[j] = frameArgId;
                 j++;

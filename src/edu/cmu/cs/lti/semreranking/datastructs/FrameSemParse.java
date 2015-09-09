@@ -2,6 +2,8 @@ package edu.cmu.cs.lti.semreranking.datastructs;
 
 import java.util.Set;
 
+import edu.cmu.cs.lti.nlp.swabha.basic.Pair;
+
 public class FrameSemParse {
     public final String id;
     public final int predStartPos;
@@ -14,7 +16,7 @@ public class FrameSemParse {
     public Set<Argument> arguments;
     public final int numArgs;
 
-    public double score;
+    public double semaforScore;
 
     public FrameSemParse(
             String id,
@@ -31,7 +33,7 @@ public class FrameSemParse {
         this.predToken = predToken;
         this.predPosTag = lexicalUnit.split("\\.")[1];
         this.arguments = arguments;
-        this.score = score;
+        this.semaforScore = score;
         this.numArgs = arguments.size();
     }
 
@@ -47,7 +49,7 @@ public class FrameSemParse {
     public String toString(int exNum) {
         StringBuilder builder = new StringBuilder();
         builder.append("1\t"); // 0
-        builder.append(score); // 1
+        builder.append(semaforScore); // 1
         builder.append("\t");
         if (numArgs == 1 && arguments.iterator().next().id.equals("NULL")) {
             builder.append(1); // 2
@@ -84,6 +86,7 @@ public class FrameSemParse {
 
         return builder.toString();
     }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -124,9 +127,76 @@ public class FrameSemParse {
                 return false;
         } else if (!predToken.equals(other.predToken))
             return false;
-        if (Double.doubleToLongBits(score) != Double.doubleToLongBits(other.score))
+        if (Double.doubleToLongBits(semaforScore) != Double.doubleToLongBits(other.semaforScore))
             return false;
         return true;
+    }
+
+    public static class FrameIdentifier {
+        public String frameId;
+        public int predStartPos;
+        public int predEndPos;
+        public Pair<Short, Short> sentIdx;
+
+        public FrameIdentifier(String frameId, int predStartPos, int predEndPos) {
+            this(frameId, predStartPos, predEndPos, new Pair<Short, Short>((short) -1, (short) -1));
+        }
+
+        public FrameIdentifier(String frameId, int predStartPos, int predEndPos,
+                Pair<Short, Short> sentIdx) {
+            this.frameId = frameId;
+            this.predStartPos = predStartPos;
+            this.predEndPos = predEndPos;
+            this.sentIdx = sentIdx;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("frame id:\t");
+            builder.append(frameId);
+            builder.append("\nstart:\t");
+            builder.append(predStartPos);
+            builder.append("\nend:\t");
+            builder.append(predEndPos);
+            return builder.toString();
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((frameId == null) ? 0 : frameId.hashCode());
+            result = prime * result + predEndPos;
+            result = prime * result + predStartPos;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            FrameIdentifier other = (FrameIdentifier) obj;
+            if (frameId == null) {
+                if (other.frameId != null)
+                    return false;
+            } else if (!frameId.equals(other.frameId))
+                return false;
+            if (predEndPos != other.predEndPos)
+                return false;
+            if (predStartPos != other.predStartPos)
+                return false;
+            return true;
+        }
+
+    }
+
+    public FrameIdentifier getIdentifier() {
+        return new FrameIdentifier(id, predStartPos, predEndPos);
     }
 
 }

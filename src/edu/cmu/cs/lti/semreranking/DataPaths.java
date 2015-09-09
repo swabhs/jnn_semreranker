@@ -1,5 +1,7 @@
 package edu.cmu.cs.lti.semreranking;
 
+import java.io.File;
+
 public class DataPaths {
 
     public static final String SEMHOME = SemRerankerMain.semHome;
@@ -19,7 +21,9 @@ public class DataPaths {
     public String synScoresDir;
     public String conllDir;
 
+    public String tokFile;
     public String conllFile;
+    public int numRanks;
 
     public DataPaths(boolean useMini, String dataSet) {
         if (useMini == false) {
@@ -29,11 +33,25 @@ public class DataPaths {
 
         semaforResultsDir = RERANKER_DATADIR + METRIC + dataSet + mini + ".semaforResults/";
         semaforOutFEDir = RERANKER_DATADIR + METRIC + dataSet + mini + ".frameElements/";
-        synScoresDir = RERANKER_DATADIR + METRIC + dataSet + ".synscores/";
-        conllDir = RERANKER_DATADIR + METRIC + dataSet + ".conlls/";
+        synScoresDir = RERANKER_DATADIR + METRIC + dataSet + mini + ".synscores/";
+        conllDir = RERANKER_DATADIR + METRIC + dataSet + mini + ".conlls/";
 
-        conllFile = RERANKER_DATADIR + "semreranker" + dataSet
+        tokFile = RERANKER_DATADIR + "semreranker" + dataSet + mini + ".sentences.tokenized";
+        conllFile = RERANKER_DATADIR + "semreranker" + dataSet + mini
                 + ".stanfdep.turbobasic.1best.conll";
+
+        numRanks = new File(semaforResultsDir).listFiles().length;
+    }
+
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(semaforOutFEDir);
+        builder.append("\n");
+        builder.append(semaforResultsDir);
+        builder.append("\n");
+        builder.append(synScoresDir);
+        builder.append("\n");
+        return builder.toString();
     }
 
 }

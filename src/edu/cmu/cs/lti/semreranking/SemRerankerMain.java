@@ -9,15 +9,17 @@ import jnn.training.GlobalParameters;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
+import edu.cmu.cs.lti.semreranking.datageneration.MiniDataGenerator;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameNetVocabs;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.evaluation.Evaluator;
 import edu.cmu.cs.lti.semreranking.evaluation.Oracle;
 import edu.cmu.cs.lti.semreranking.jnn.FspRerankerApp;
 import edu.cmu.cs.lti.semreranking.lossfunctions.LogLoss;
-import edu.cmu.cs.lti.semreranking.utils.FileUtils;
-import edu.cmu.cs.lti.semreranking.utils.FileUtils.AllRerankingData;
+import edu.cmu.cs.lti.semreranking.utils.DataFilesReader;
+import edu.cmu.cs.lti.semreranking.utils.DataFilesReader.AllRerankingData;
 
 /**
  * Sentences with no frames are basically not read as a FrameSemanticParse.
@@ -28,8 +30,8 @@ import edu.cmu.cs.lti.semreranking.utils.FileUtils.AllRerankingData;
 public class SemRerankerMain {
 
     @Parameter(names = "-semhome", description = "SEMAFOR home")
-    public static String semHome =
-            "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
+    public static String semHome = MiniDataGenerator.semhome;
+    // "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
 
     @Parameter(names = "-metric", description = "source of k-best syntax")
     public static String metric = "exactKbest";
@@ -84,7 +86,7 @@ public class SemRerankerMain {
         GlobalParameters.useAdagradDefault = useAdagrad;
         GlobalParameters.l2regularizerLambdaDefault = l2;
 
-        AllRerankingData allData = FileUtils.readAllRerankingingData(useMini);
+        AllRerankingData allData = DataFilesReader.readAllRerankingData(useMini);
         FrameNetVocabs vocabs = allData.vocabs;
 
         System.err.println("\n\nVocab Stats:");
@@ -96,42 +98,41 @@ public class SemRerankerMain {
 
         System.err.println("\n\nPerforming Deep Learning:");
         FspRerankerApp reranker = new FspRerankerApp(allData, new LogLoss());
-        Map<Integer, Scored<FrameSemAnalysis>> bestParses = reranker
-                .doDeepDecoding(allData.testData);
+        Map<Integer, Map<FrameIdentifier, Scored<FrameSemParse>>> bestParses = reranker
+                .doDeepDecoding(allData.devData);
 
         System.err.print(
-                "Reranked final:\t" + Evaluator.getRerankedMicroAvg(bestParses).toString());
+                "Reranked final:\t" + Evaluator.getRerankedMicroAvgNew(bestParses).toString());
         printOracle(allData);
     }
 
     static void printOracle(AllRerankingData allData) {
         TrainData trainData = allData.trainData;
-        TestData testData = allData.testData;
         TestData devData = allData.devData;
 
         double trainBest = Oracle.getTrainUnsortedOracle1best(trainData).f1;
-        double oracleTrainBest = Oracle.getMicroCorpusAvg(trainData, trainData.numTotParses).f1;
+        double oracleTrainBest = Oracle.getMicroCorpusAvg(trainData, trainData.numRanks).f1;
 
         double devBest = Oracle.getMicroCorpusAvg(devData, 1).f1;
-        double oracleDevBest = Oracle.getMicroCorpusAvg(devData, devData.numTotParses).f1;
+        double oracleDevBest = Oracle.getMicroCorpusAvg(devData, devData.numRanks).f1;
 
-        double testBest = Oracle.getMicroCorpusAvg(testData, 1).f1;
-        double oracleTestBest = Oracle.getMicroCorpusAvg(testData, testData.numTotParses).f1;
+        // double testBest = Oracle.getMicroCorpusAvg(testData, 1).f1;
+        // double oracleTestBest = Oracle.getMicroCorpusAvg(testData, testData.numRanks).f1;
 
         System.err.println("\n\nOracle Results:");
         System.err.println("TRAIN\t1-best = "
                 + formatter.format(trainBest)
-                + "\t" + trainData.numTotParses + "-best = "
+                + "\t" + trainData.numRanks + "-best = "
                 + formatter.format(oracleTrainBest));
 
         System.err.println("DEV  \t1-best = "
                 + formatter.format(devBest)
-                + "\t" + devData.numTotParses + "-best = "
+                + "\t" + devData.numRanks + "-best = "
                 + formatter.format(oracleDevBest));
 
-        System.err.println("TEST \t1-best = "
-                + formatter.format(testBest)
-                + "\t" + testData.numTotParses + "-best = "
-                + formatter.format(oracleTestBest));
+        // System.err.println("TEST \t1-best = "
+        // + formatter.format(testBest)
+        // + "\t" + testData.numRanks + "-best = "
+        // + formatter.format(oracleTestBest));
     }
 }

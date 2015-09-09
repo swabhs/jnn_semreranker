@@ -5,15 +5,15 @@ public class Scored<T> implements Comparable<Scored<T>> {
     public T entity;
     public Double fscore;
 
-    public FsaScore detailedFspScore;
+    public SemevalScore semevalScore;
 
     public double synScore;
     public int origRank; // rank as given by syntactic/semantic parser, NOT based on fscore
 
-    public Scored(T entity, FsaScore fspScore, double synScore, int origRank) {
+    public Scored(T entity, SemevalScore semevalScore, double synScore, int origRank) {
         this.entity = entity;
-        this.fscore = fspScore.fscore;
-        this.detailedFspScore = fspScore;
+        this.fscore = semevalScore.fscore;
+        this.semevalScore = semevalScore;
         this.synScore = synScore;
         this.origRank = origRank;
     }
@@ -28,7 +28,7 @@ public class Scored<T> implements Comparable<Scored<T>> {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((detailedFspScore == null) ? 0 : detailedFspScore.hashCode());
+        result = prime * result + ((semevalScore == null) ? 0 : semevalScore.hashCode());
         result = prime * result + ((entity == null) ? 0 : entity.hashCode());
         result = prime * result + ((fscore == null) ? 0 : fscore.hashCode());
         long temp;
@@ -48,10 +48,10 @@ public class Scored<T> implements Comparable<Scored<T>> {
         if (getClass() != obj.getClass())
             return false;
         Scored other = (Scored) obj;
-        if (detailedFspScore == null) {
-            if (other.detailedFspScore != null)
+        if (semevalScore == null) {
+            if (other.semevalScore != null)
                 return false;
-        } else if (!detailedFspScore.equals(other.detailedFspScore))
+        } else if (!semevalScore.equals(other.semevalScore))
             return false;
         if (entity == null) {
             if (other.entity != null)

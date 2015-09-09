@@ -1,17 +1,19 @@
 package edu.cmu.cs.lti.semreranking.utils;
 
+import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import com.beust.jcommander.internal.Lists;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
+import edu.cmu.cs.lti.semreranking.DataPaths;
 import edu.cmu.cs.lti.semreranking.datastructs.Argument;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
 
 public class FeReader {
 
@@ -76,14 +78,14 @@ public class FeReader {
         int start = -1; // HACKS for frames with no arguments
         int end = -1;// HACKS for frames with no arguments
         if (numArgs == 0) { // No args for frame
-            String frameArgId = StringUtils.makeFrameArgId(frameId, argId);
+            String frameArgId = FormatUtils.makeFrameArgId(frameId, argId);
             addFrameArgId(frameArgId);
             arguments.add(new Argument(argId, start, end));
         } else {
             for (int argNum = 0; argNum < numArgs; argNum++) {
                 argId = feToks[startArgToken + argNum * 2];
 
-                String frameArgId = StringUtils.makeFrameArgId(frameId, argId);
+                String frameArgId = FormatUtils.makeFrameArgId(frameId, argId);
                 addFrameArgId(frameArgId);
 
                 String argPosToks[] = feToks[startArgToken + argNum * 2 + 1].split(":");
@@ -93,35 +95,50 @@ public class FeReader {
             }
         }
 
-        return new FrameSemParse(frameId, predStart, predEnd, predLexUnit, predToken, arguments, frameScore);
+        return new FrameSemParse(frameId, predStart, predEnd, predLexUnit, predToken, arguments,
+                frameScore);
     }
 
-    public Multimap<Integer, FrameSemAnalysis> readFeFile(String feFileName) {
+    private Map<Integer, Map<FrameIdentifier, List<FrameSemParse>>> readFeFile(
+            String feFileName,
+            Map<Integer, Map<FrameIdentifier, List<FrameSemParse>>> allCorpusFsps) {
         List<String> feLines = BasicFileReader.readFile(feFileName);
 
-        // map to example number
-        Multimap<Integer, FrameSemAnalysis> exampleFspMap = HashMultimap.create();
-        List<FrameSemParse> frames = Lists.newArrayList();
+        for (int lineNum = 0; lineNum < feLines.size(); lineNum++) {
+            String[] feToks = feLines.get(lineNum).split("\t");
 
-        int corpusSentNum = Integer.parseInt(feLines.get(0).trim().split("\t")[7]);
-        int prevSentNum = corpusSentNum;
+            int corpusSentNum = Integer.parseInt(feToks[7]);
+            FrameSemParse parse = getFrameFromFeLine(feLines.get(lineNum));
+            FrameIdentifier identifier = parse.getIdentifier();
 
-        for (int f = 0; f < feLines.size(); f++) {
-            String[] feToks = feLines.get(f).split("\t");
-            corpusSentNum = Integer.parseInt(feToks[7]);
-
-            if (corpusSentNum != prevSentNum) { // new Sentence
-
-                exampleFspMap.put(prevSentNum, new FrameSemAnalysis(frames));
-                frames = Lists.newArrayList();
-                prevSentNum = corpusSentNum;
+            Map<FrameIdentifier, List<FrameSemParse>> fspsForSent = null;
+            if (allCorpusFsps.containsKey(corpusSentNum)) {
+                fspsForSent = allCorpusFsps.get(corpusSentNum);
+            } else {
+                fspsForSent = Maps.newHashMap();// should happen only at rank 0
             }
 
-            frames.add(getFrameFromFeLine(feLines.get(f)));
+            List<FrameSemParse> kbestParses = null;
+            if (fspsForSent.containsKey(identifier)) {
+                kbestParses = fspsForSent.get(identifier);
+            } else {
+                kbestParses = Lists.newArrayList(); // should happen only at rank 0
+            }
+            kbestParses.add(parse);
+            fspsForSent.put(identifier, kbestParses);
+            allCorpusFsps.put(corpusSentNum, fspsForSent);
         }
+        return allCorpusFsps;
+    }
 
-        exampleFspMap.put(corpusSentNum, new FrameSemAnalysis(frames));
-        return exampleFspMap;
+    public Map<Integer, Map<FrameIdentifier, List<FrameSemParse>>> readAllFeFiles(String feDir) {
+        Map<Integer, Map<FrameIdentifier, List<FrameSemParse>>> allCorpusFsps = Maps.newTreeMap();
+        int numRanks = new File(feDir).listFiles().length;
+        for (int rank = 0; rank < numRanks; rank++) {
+            String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
+            allCorpusFsps = readFeFile(feFileName, allCorpusFsps);
+        }
+        return allCorpusFsps;
     }
 
 }

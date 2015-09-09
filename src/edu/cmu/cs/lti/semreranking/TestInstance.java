@@ -7,22 +7,27 @@ import java.util.TreeMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
+/** A frame-semantic parse for one of the many frames present in the sentence */
 public class TestInstance extends DataInstance {
 
     /* parses ranked by syntactic score */
-    final private TreeMap<Integer, Scored<FrameSemAnalysis>> rankParseMap;
+    final private TreeMap<Integer, Scored<FrameSemParse>> rankParseMap;
 
-    public TestInstance(String[] tokens, String[] posTags, List<Scored<FrameSemAnalysis>> parses) {
-        super(parses.size(), tokens, posTags);
+    public TestInstance(
+            int exID,
+            FrameIdentifier identifier,
+            List<Scored<FrameSemParse>> parses) {
+        super(exID, identifier, parses.size());
         this.rankParseMap = Maps.newTreeMap();
 
         // uniquing all the parses:
-        Set<Scored<FrameSemAnalysis>> uniqueParses = Sets.newHashSet();
+        Set<Scored<FrameSemParse>> uniqueParses = Sets.newHashSet();
         int rank = 0;
-        for (Scored<FrameSemAnalysis> parse : parses) {
+        for (Scored<FrameSemParse> parse : parses) {
             if (uniqueParses.contains(parse)) {
                 continue;
             }
@@ -34,7 +39,7 @@ public class TestInstance extends DataInstance {
     }
 
     @Override
-    public Scored<FrameSemAnalysis> getParseAtRank(int rank) {
+    public Scored<FrameSemParse> getParseAtRank(int rank) {
         return rankParseMap.get(rank);
     }
 

@@ -1,23 +1,30 @@
 package edu.cmu.cs.lti.semreranking;
 
-import edu.cmu.cs.lti.semreranking.datastructs.FrameSemAnalysis;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
+import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 
+/**
+ * Represents a single FrameSemParse in a list of k-best parses.
+ * 
+ * @author sswayamd
+ *
+ */
 public abstract class DataInstance {
-
+    public int exNum;
+    public FrameIdentifier identifier;
     public int numUniqueParses;
 
-    public String[] tokens;
-    public String[] posTags;
-    public int size;
+    public DataInstance(
+            int exNum,
+            FrameIdentifier identifier,
+            int numUniqueParses) {
+        this.exNum = exNum;
+        this.identifier = identifier;
 
-    public DataInstance(int numParses, String[] tokens, String[] posTags) {
-        this.numUniqueParses = numParses;
-        this.tokens = tokens;
-        this.posTags = posTags;
-        this.size = tokens.length;
+        this.numUniqueParses = numUniqueParses;
     }
 
-    public abstract Scored<FrameSemAnalysis> getParseAtRank(int rank);
+    public abstract Scored<FrameSemParse> getParseAtRank(int rank);
 
 }

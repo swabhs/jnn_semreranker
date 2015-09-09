@@ -3,29 +3,20 @@ package edu.cmu.cs.lti.semreranking.datastructs;
 import edu.cmu.cs.lti.semreranking.evaluation.Result;
 
 /**
- * Score given to the frame-semantic analysis of a sentence, according to the SemEval 2007 scheme
+ * Score in terms of true and false positives and negatives given to a frame-semantic parse,
+ * according to the SemEval 2007 scheme.
  * 
  * @author sswayamd
  *
  */
-public class FsaScore {
+public class SemevalScore {
     public double pnum;
     public double pdenom;
     public double rnum;
     public double rdenom;
     public double fscore;
 
-    public FsaScore(double pnum, double pdenom, double rnum, double rdenom, double fscore) {
-        super();
-        this.pnum = pnum;
-        this.pdenom = pdenom;
-        this.rnum = rnum;
-        this.rdenom = rdenom;
-        this.fscore = fscore;
-    }
-
-    public FsaScore(double pnum, double pdenom, double rnum, double rdenom) {
-        super();
+    public SemevalScore(double pnum, double pdenom, double rnum, double rdenom) {
         this.pnum = pnum;
         this.pdenom = pdenom;
         this.rnum = rnum;
@@ -33,12 +24,8 @@ public class FsaScore {
         this.fscore = Result.getFscore(pnum, pdenom, rnum, rdenom);
     }
 
-    public FsaScore() {
-        this.pnum = 0.0;
-        this.pdenom = 0.0;
-        this.rnum = 0.0;
-        this.rdenom = 0.0;
-        this.fscore = Result.getFscore(pnum, pdenom, rnum, rdenom);
+    public SemevalScore() {
+        this(0.0, 0.0, 0.0, 0.0);
     }
 
     @Override
@@ -67,7 +54,7 @@ public class FsaScore {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        FsaScore other = (FsaScore) obj;
+        SemevalScore other = (SemevalScore) obj;
 
         if (Double.doubleToLongBits(pdenom) != Double.doubleToLongBits(other.pdenom))
             return false;
@@ -78,6 +65,11 @@ public class FsaScore {
         if (Double.doubleToLongBits(rnum) != Double.doubleToLongBits(other.rnum))
             return false;
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "recall(rNum/rDenom)\tprecision(pNum/pDenom)\tfscore";// TODO: part of writing...
     }
 
 }

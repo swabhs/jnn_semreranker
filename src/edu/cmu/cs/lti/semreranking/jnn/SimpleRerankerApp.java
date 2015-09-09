@@ -27,8 +27,8 @@ public class SimpleRerankerApp {
             tokenVocab.addWordToVocab(inputTokens[i]);
         }
 
-        tokenVocab.sortVocabByCount(); // TODO: what is this?
-        tokenVocab.generateHuffmanCodes();// TODO: what is this?
+        tokenVocab.sortVocabByCount(); // TODO(Wang Ling): what is this?
+        tokenVocab.generateHuffmanCodes();// TODO(Wang Ling): what is this?
 
         int tokenInpDim = 5; // dimension of the word vectors for the tokens of the sentence
         LookupTable tokenTable = new LookupTable(tokenVocab, tokenInpDim);

@@ -11,30 +11,37 @@ import java.util.List;
  */
 public class FrameSemAnalysis {
 
-    public List<FrameSemParse> frameSemParses;
+    public List<Scored<FrameSemParse>> frameSemParses;
+
+    public int rank = 0;
 
     public int numFsps;
     public int numFrameArgs;
 
     public double semaforScore;
 
-    public FrameSemAnalysis(List<FrameSemParse> frames) {
+    public FrameSemAnalysis(List<Scored<FrameSemParse>> frames) {
         this.frameSemParses = frames;
         numFsps = frames.size();
         numFrameArgs = 0;
         semaforScore = 0.0;
-        for (FrameSemParse f : frames) {
-            numFrameArgs += f.numArgs;
-            semaforScore += f.score;
+        for (Scored<FrameSemParse> f : frames) {
+            numFrameArgs += f.entity.numArgs;
+            semaforScore += f.entity.semaforScore;
         }
         semaforScore /= numFsps;
+    }
+
+    public FrameSemAnalysis(List<Scored<FrameSemParse>> frames, int rank) {
+        this(frames);
+        this.rank = rank;
     }
 
     public String toString(int exNum) {
         StringBuilder builder = new StringBuilder();
         int i = 0;
-        for (FrameSemParse frameSemParse : frameSemParses) {
-            builder.append(frameSemParse.toString(exNum));
+        for (Scored<FrameSemParse> frameSemParse : frameSemParses) {
+            builder.append(frameSemParse.entity.toString(exNum));
             i++;
             if (i != frameSemParses.size()) {
                 builder.append("\n");
@@ -44,8 +51,8 @@ public class FrameSemAnalysis {
     }
 
     public void print() {
-        for (FrameSemParse fsp : frameSemParses) {
-            fsp.print();
+        for (Scored<FrameSemParse> fsp : frameSemParses) {
+            fsp.entity.print();
         }
     }
 
