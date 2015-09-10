@@ -1,10 +1,8 @@
 package edu.cmu.cs.lti.semreranking.utils;
 
 import java.util.List;
-import java.util.Set;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import edu.cmu.cs.lti.nlp.swabha.basic.Conll;
 import edu.cmu.cs.lti.nlp.swabha.basic.ConllElement;
@@ -16,14 +14,14 @@ public class SentConllReader {
 
         public List<String[]> allLemmas;
         public List<String[]> allPostags;
-        public Set<String> tokensVocab;
-        public Set<String> posVocab;
+        public FrequencySet tokensVocab;
+        public FrequencySet posVocab;
 
         public SentsAndToks(
                 List<String[]> allLemmas,
                 List<String[]> allPostags,
-                Set<String> tokensVocab,
-                Set<String> posVocab) {
+                FrequencySet tokensVocab,
+                FrequencySet posVocab) {
             this.allLemmas = allLemmas;
             this.allPostags = allPostags;
             this.tokensVocab = tokensVocab;
@@ -34,9 +32,41 @@ public class SentConllReader {
     public static SentsAndToks readConlls(String fileName) {
         List<String[]> allToks = Lists.newArrayList();
         List<String[]> allPostags = Lists.newArrayList();
-        Set<String> tokensVocab = Sets.newHashSet();
-        Set<String> posVocab = Sets.newHashSet();
+        FrequencySet tokensVocab = new FrequencySet();
+        FrequencySet posVocab = new FrequencySet();
 
+        List<Conll> sents = BasicFileReader.readConllFile(fileName);
+
+        for (Conll sent : sents) {
+            for (ConllElement element : sent.getElements()) {
+                tokensVocab.add(element.getLemma());
+                posVocab.add(element.getCoarsePosTag());
+            }
+        }
+        tokensVocab.freeze();
+        posVocab.freeze();
+
+        for (Conll sent : sents) {
+            String[] tokens = new String[sent.getElements().size()];
+            String[] posTags = new String[sent.getElements().size()];
+            int i = 0;
+            for (ConllElement element : sent.getElements()) {
+                tokens[i] = tokensVocab.returnKeyIfPresent(element.getLemma());
+                posTags[i] = posVocab.returnKeyIfPresent(element.getCoarsePosTag());
+                i++;
+            }
+            allToks.add(tokens);
+            allPostags.add(posTags);
+        }
+        return new SentsAndToks(allToks, allPostags, tokensVocab, posVocab);
+    }
+
+    public static SentsAndToks readConlls(
+            String fileName,
+            FrequencySet tokensVocab,
+            FrequencySet posVocab) {
+        List<String[]> allToks = Lists.newArrayList();
+        List<String[]> allPostags = Lists.newArrayList();
         List<Conll> sents = BasicFileReader.readConllFile(fileName);
 
         for (Conll sent : sents) {
@@ -44,10 +74,8 @@ public class SentConllReader {
             String[] posTags = new String[sent.getElements().size()];
             int i = 0;
             for (ConllElement element : sent.getElements()) {
-                tokens[i] = element.getLemma();
-                tokensVocab.add(element.getLemma());
-                posTags[i] = element.getCoarsePosTag();
-                posVocab.add(element.getCoarsePosTag());
+                tokens[i] = tokensVocab.returnKeyIfPresent(element.getLemma());
+                posTags[i] = posVocab.returnKeyIfPresent(element.getCoarsePosTag());
                 i++;
             }
             allToks.add(tokens);
