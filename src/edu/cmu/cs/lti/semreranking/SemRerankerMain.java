@@ -9,7 +9,6 @@ import jnn.training.GlobalParameters;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
-import edu.cmu.cs.lti.semreranking.datageneration.MiniDataGenerator;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameNetVocabs;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
@@ -30,8 +29,7 @@ import edu.cmu.cs.lti.semreranking.utils.DataFilesReader.AllRerankingData;
 public class SemRerankerMain {
 
     @Parameter(names = "-semhome", description = "SEMAFOR home")
-    public static String semHome = MiniDataGenerator.semhome;
-    // "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
+    public static String semHome = "/Users/sswayamd/Documents/workspace/jnn/SemanticReranker/data/";
 
     @Parameter(names = "-metric", description = "source of k-best syntax")
     public static String metric = "exactKbest";

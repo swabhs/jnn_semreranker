@@ -1,11 +1,10 @@
 package edu.cmu.cs.lti.semreranking;
 
 import java.util.List;
-import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
@@ -25,7 +24,7 @@ public class TestInstance extends DataInstance {
         this.rankParseMap = Maps.newTreeMap();
 
         // uniquing all the parses:
-        Set<Scored<FrameSemParse>> uniqueParses = Sets.newHashSet();
+        TreeSet<Scored<FrameSemParse>> uniqueParses = new TreeSet<Scored<FrameSemParse>>();
         int rank = 0;
         for (Scored<FrameSemParse> parse : parses) {
             if (uniqueParses.contains(parse)) {

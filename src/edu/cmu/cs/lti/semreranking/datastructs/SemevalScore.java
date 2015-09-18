@@ -69,7 +69,9 @@ public class SemevalScore {
 
     @Override
     public String toString() {
-        return "recall(rNum/rDenom)\tprecision(pNum/pDenom)\tfscore";// TODO: part of writing...
+        return Result.getRecallOrPrec(rnum, rdenom) + "(" + rnum + "/" + rdenom + ")\t"
+                + Result.getRecallOrPrec(pnum, pdenom) + "(" + pnum + "/" + pdenom + ")\t"
+                + fscore;
     }
 
 }

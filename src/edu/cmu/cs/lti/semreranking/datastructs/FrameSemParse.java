@@ -192,7 +192,6 @@ public class FrameSemParse {
                 return false;
             return true;
         }
-
     }
 
     public FrameIdentifier getIdentifier() {

@@ -17,6 +17,7 @@ import edu.cmu.cs.lti.semreranking.DataInstance;
 import edu.cmu.cs.lti.semreranking.SemRerankerMain;
 import edu.cmu.cs.lti.semreranking.TestInstance;
 import edu.cmu.cs.lti.semreranking.TrainData;
+import edu.cmu.cs.lti.semreranking.TrainInstance;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
@@ -233,7 +234,8 @@ public class Oracle {
 
         for (int exNum = 0; exNum < data.numInstances; exNum++) {
             for (FrameIdentifier identifier : data.getFramesInEx(exNum)) {
-                Scored<FrameSemParse> fsp = data.getInstance(exNum, identifier).getParseAtRank(0);
+                TrainInstance inst = (TrainInstance) data.getInstance(exNum, identifier);
+                Scored<FrameSemParse> fsp = inst.getUnsortedParseAtRank(0);
 
                 macrof1 += fsp.fscore;
                 pNumTotal += fsp.semevalScore.pnum;

@@ -21,7 +21,7 @@ public class TrainData extends Data {
         super(tokens, posTags, numTrainInstances, numRanks);
         this.trainInstances = trainInstances;
 
-        double totalUniqueFsps = 0.0;
+        int totalUniqueFsps = 0;
         avgNumRanks = 0.0;
         for (int ex : trainInstances.keySet()) {
             for (FrameIdentifier identifier : trainInstances.get(ex).keySet()) {
@@ -31,8 +31,9 @@ public class TrainData extends Data {
         }
         avgNumRanks /= numTrainInstances;
 
-        System.err.println("Unique train instances: " + totalUniqueFsps);
-        System.err.println("Avg train size = " + avgNumRanks);
+        System.err.println("Num of train instances = " + numTrainInstances);
+        System.err.println("Total unique train FSPs = " + totalUniqueFsps);
+        System.err.println("Avg train k-best size = " + avgNumRanks + "\n");
     }
 
     @Override

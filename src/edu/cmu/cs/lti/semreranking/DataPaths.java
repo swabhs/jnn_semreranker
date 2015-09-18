@@ -2,9 +2,11 @@ package edu.cmu.cs.lti.semreranking;
 
 import java.io.File;
 
+import edu.cmu.cs.lti.semreranking.datageneration.CnnDataGenerator;
+
 public class DataPaths {
 
-    public static final String SEMHOME = SemRerankerMain.semHome;
+    public static final String SEMHOME = CnnDataGenerator.semHome;
     public static final String METRIC = SemRerankerMain.metric;
     public static final String RERANKER_DATADIR = SEMHOME + "/training/data/emnlp2015/";
 

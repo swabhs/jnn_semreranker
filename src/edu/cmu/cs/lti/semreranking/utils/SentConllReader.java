@@ -39,8 +39,8 @@ public class SentConllReader {
 
         for (Conll sent : sents) {
             for (ConllElement element : sent.getElements()) {
-                tokensVocab.add(element.getLemma());
-                posVocab.add(element.getCoarsePosTag());
+                tokensVocab.addKeyIfNotFrozen(element.getLemma());
+                posVocab.addKeyIfNotFrozen(element.getCoarsePosTag());
             }
         }
         tokensVocab.freeze();
@@ -51,8 +51,8 @@ public class SentConllReader {
             String[] posTags = new String[sent.getElements().size()];
             int i = 0;
             for (ConllElement element : sent.getElements()) {
-                tokens[i] = tokensVocab.returnKeyIfPresent(element.getLemma());
-                posTags[i] = posVocab.returnKeyIfPresent(element.getCoarsePosTag());
+                tokens[i] = tokensVocab.returnKeyAfterFreezing(element.getLemma());
+                posTags[i] = posVocab.returnKeyAfterFreezing(element.getCoarsePosTag());
                 i++;
             }
             allToks.add(tokens);
@@ -74,8 +74,8 @@ public class SentConllReader {
             String[] posTags = new String[sent.getElements().size()];
             int i = 0;
             for (ConllElement element : sent.getElements()) {
-                tokens[i] = tokensVocab.returnKeyIfPresent(element.getLemma());
-                posTags[i] = posVocab.returnKeyIfPresent(element.getCoarsePosTag());
+                tokens[i] = tokensVocab.returnKeyAfterFreezing(element.getLemma());
+                posTags[i] = posVocab.returnKeyAfterFreezing(element.getCoarsePosTag());
                 i++;
             }
             allToks.add(tokens);

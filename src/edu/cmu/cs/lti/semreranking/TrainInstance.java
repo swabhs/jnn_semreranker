@@ -31,7 +31,7 @@ public class TrainInstance extends DataInstance {
             rank++;
         }
 
-        /* sorting the parses by gold f-score */
+        /* sorting the parses by gold f-score in descending order */
         TreeSet<Scored<FrameSemParse>> kbestParses = new TreeSet<Scored<FrameSemParse>>();
         kbestParses.addAll(parses);
 

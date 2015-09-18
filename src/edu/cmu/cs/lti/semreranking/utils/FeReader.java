@@ -1,6 +1,7 @@
 package edu.cmu.cs.lti.semreranking.utils;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,6 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import edu.cmu.cs.lti.nlp.swabha.basic.Pair;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
 import edu.cmu.cs.lti.semreranking.DataPaths;
 import edu.cmu.cs.lti.semreranking.datastructs.Argument;
@@ -103,6 +105,7 @@ public class FeReader {
             String feFileName,
             Map<Integer, Map<FrameIdentifier, List<FrameSemParse>>> allCorpusFsps) {
         List<String> feLines = BasicFileReader.readFile(feFileName);
+        HashSet<Pair<Integer, FrameIdentifier>> seenSoFar = new HashSet<Pair<Integer, FrameIdentifier>>();
 
         for (int lineNum = 0; lineNum < feLines.size(); lineNum++) {
             String[] feToks = feLines.get(lineNum).split("\t");
@@ -110,6 +113,13 @@ public class FeReader {
             int corpusSentNum = Integer.parseInt(feToks[7]);
             FrameSemParse parse = getFrameFromFeLine(feLines.get(lineNum));
             FrameIdentifier identifier = parse.getIdentifier();
+
+            Pair<Integer, FrameIdentifier> feId = new Pair<Integer, FrameIdentifier>(corpusSentNum,
+                    identifier);
+            if (seenSoFar.contains(feId)) { // TODO: figure out if ignorable
+                continue;
+            }
+            seenSoFar.add(feId);
 
             Map<FrameIdentifier, List<FrameSemParse>> fspsForSent = null;
             if (allCorpusFsps.containsKey(corpusSentNum)) {
@@ -137,6 +147,14 @@ public class FeReader {
         for (int rank = 0; rank < numRanks; rank++) {
             String feFileName = feDir + rank + DataPaths.FE_FILE_EXTN;
             allCorpusFsps = readFeFile(feFileName, allCorpusFsps);
+        }
+        for (int exNum : allCorpusFsps.keySet()) {
+            for (FrameIdentifier id : allCorpusFsps.get(exNum).keySet()) {
+
+                if (allCorpusFsps.get(exNum).get(id).size() > 100) {
+                    System.err.println("\nALARMMMM");
+                }
+            }
         }
         return allCorpusFsps;
     }

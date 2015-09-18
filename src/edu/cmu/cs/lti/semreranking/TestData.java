@@ -20,7 +20,7 @@ public class TestData extends Data {
         super(tokens, posTags, numTestInstances, totNumRanks);
         this.testInstances = testInstances;
 
-        double totalUniqueFsps = 0.0;
+        int totalUniqueFsps = 0;
         avgNumRanks = 0.0;
         for (int ex : testInstances.keySet()) {
             for (FrameIdentifier identifier : testInstances.get(ex).keySet()) {
@@ -30,8 +30,9 @@ public class TestData extends Data {
         }
         avgNumRanks /= numTestInstances;
 
-        System.err.println("Unique test instances: " + totalUniqueFsps);
-        System.err.println("Avg test size = " + avgNumRanks);
+        System.err.println("Num of test instances = " + numTestInstances);
+        System.err.println("Total unique test FSPs = " + totalUniqueFsps);
+        System.err.println("Avg test k-best size = " + avgNumRanks + "\n");
     }
 
     @Override

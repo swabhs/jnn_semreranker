@@ -42,7 +42,7 @@ public class DataFilesReader {
                 readDataSet(trainDataPaths, reader, trainSentsAndToks.allLemmas.size());
 
         System.err.println("Number of sentences read = " + trainSentsAndToks.allLemmas.size());
-        System.err.println("Numer of FSPs read = " + allTrainFsps.keySet().size());
+        System.err.println("Numer of sentences with FSAs = " + allTrainFsps.keySet().size());
 
         // Adding the tokens to the FEs
         Map<Integer, Map<FrameIdentifier, TrainInstance>> trainInstances = Maps.newTreeMap();
@@ -75,7 +75,7 @@ public class DataFilesReader {
                 readDataSet(devDataPaths, reader, devSentsAndToks.allLemmas.size());
 
         System.err.println("Number of DEV sentences read = " + devSentsAndToks.allLemmas.size());
-        System.err.println("Numer of DEV FSPs read = " + allDevFsps.keySet().size());
+        System.err.println("Numer of DEV sentences with FSAs = " + allDevFsps.keySet().size());
 
         Map<Integer, Map<FrameIdentifier, TestInstance>> devInstances = Maps.newTreeMap();
         int numTestInstances = 0;
@@ -131,35 +131,45 @@ public class DataFilesReader {
         Map<Integer, Map<FrameIdentifier, List<SemevalScore>>> kbestFscoMap = ResultsFileUtils
                 .readAllFscores(tokFileName, xmlDir);
 
-        Map<Integer, List<Double>> kbestSynScoresMap =
-                SynScoreReader.readAllSynScores(synDir);
+        Map<Integer, List<Double>> kbestSynScoresMap = SynScoreReader.readAllSynScores(synDir);
 
-        // matching:
         Map<Integer, Map<FrameIdentifier, List<Scored<FrameSemParse>>>> dataInsts =
                 Maps.newTreeMap();
+
         for (int exNum = 0; exNum < totNumEx; exNum++) {
             if (kbestFspsMap.containsKey(exNum) == false // not all sents have frames
                     || kbestFscoMap.containsKey(exNum) == false) { // not all frames have annotation
-                continue;
+                continue; // TODO: is this the right thing to do?
             }
             Map<FrameIdentifier, List<Scored<FrameSemParse>>> idParseMap = Maps.newHashMap();
 
             for (FrameIdentifier identifier : kbestFspsMap.get(exNum).keySet()) {
-
+                // matching:
                 if (kbestFscoMap.get(exNum).containsKey(identifier) == false) {
-                    System.err.println("Sentence " + exNum + ":\n" + identifier.toString());
-                    continue;
+                    System.err
+                            .println("WARNING:Missing sent " + exNum + ":\n" + identifier.frameId);
+                    continue; // this should never happen, every FSP must have a score
                 }
+
                 int numRanks = kbestFspsMap.get(exNum).get(identifier).size();
+                if (numRanks != kbestFscoMap.get(exNum).get(identifier).size()) {
+                    System.err.println("WARNING:#" + exNum + " " + identifier.frameId
+                            + "\tnumParses = " + numRanks
+                            + " evaluated = " + kbestFscoMap.get(exNum).get(identifier).size());
+                    // this should never happen, every FSP must have a score. BUT it does!
+                }
+
                 List<Scored<FrameSemParse>> scoredParses = Lists.newArrayList();
                 for (int rank = 0; rank < numRanks; rank++) {
-                    // System.err.println(exNum + " " + rank);
-                    // System.err.println(kbestFspsMap.get(exNum).get(identifier).get(rank));
-                    // System.err.println(kbestFscoMap.get(exNum).get(identifier).get(rank));
-                    // System.err.println(kbestSynScoresMap.get(exNum).get(rank));
+                    SemevalScore seScore = null;
+                    if (kbestFscoMap.get(exNum).get(identifier).size() <= rank) {
+                        seScore = new SemevalScore(); // HACK: all zeroes for missing
+                    } else {
+                        seScore = kbestFscoMap.get(exNum).get(identifier).get(rank);
+                    }
                     scoredParses.add(new Scored<FrameSemParse>(
                             kbestFspsMap.get(exNum).get(identifier).get(rank),
-                            kbestFscoMap.get(exNum).get(identifier).get(rank),
+                            seScore,
                             kbestSynScoresMap.get(exNum).get(rank),
                             rank));
                 }
