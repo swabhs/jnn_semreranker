@@ -159,7 +159,7 @@ public class SimpleRerankerApp {
             inference.addMapping(new OutputMappingDenseToDense(frameOutArray, frameOutSig,
                     LogisticSigmoidLayer.singleton));
 
-            // combine all frames (//TODO: add also non-framewords)
+            // combine all frames
             DenseNeuronArray sentenceArray = new DenseNeuronArray(resultDim);
             sentenceArray.setName("all frames");
             inference.addNeurons(sentenceArray);

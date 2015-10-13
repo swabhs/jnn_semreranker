@@ -2,9 +2,11 @@ package edu.cmu.cs.lti.semreranking.utils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import edu.cmu.cs.lti.semreranking.DataPaths;
 import edu.cmu.cs.lti.semreranking.TestData;
@@ -16,7 +18,7 @@ import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse;
 import edu.cmu.cs.lti.semreranking.datastructs.FrameSemParse.FrameIdentifier;
 import edu.cmu.cs.lti.semreranking.datastructs.Scored;
 import edu.cmu.cs.lti.semreranking.datastructs.SemevalScore;
-import edu.cmu.cs.lti.semreranking.utils.SentConllReader.SentsAndToks;
+import edu.cmu.cs.lti.semreranking.utils.CopyOfSentConllReader.SentsAndToks;
 
 public class DataFilesReader {
 
@@ -35,8 +37,13 @@ public class DataFilesReader {
     public static AllRerankingData readAllRerankingData(boolean useMini) {
         FeReader reader = new FeReader();
 
+        Set<String> tokensVocab = Sets.newHashSet();
+        Set<String> posVocab = Sets.newHashSet();
+
         DataPaths trainDataPaths = new DataPaths(useMini, "train");
-        SentsAndToks trainSentsAndToks = SentConllReader.readConlls(trainDataPaths.conllFile);
+        SentsAndToks trainSentsAndToks = CopyOfSentConllReader.readConlls(trainDataPaths.conllFile);
+        tokensVocab.addAll(trainSentsAndToks.tokensVocab);
+        posVocab.addAll(trainSentsAndToks.posVocab);
 
         Map<Integer, Map<FrameIdentifier, List<Scored<FrameSemParse>>>> allTrainFsps =
                 readDataSet(trainDataPaths, reader, trainSentsAndToks.allLemmas.size());
@@ -62,14 +69,14 @@ public class DataFilesReader {
         // DEV ////////////////////////////////////////
 
         DataPaths devDataPaths = new DataPaths(useMini, "dev");
-        SentsAndToks devSentsAndToks = SentConllReader.readConlls(
-                devDataPaths.conllFile, trainSentsAndToks.tokensVocab, trainSentsAndToks.posVocab); // taking
-                                                                                                    // care
-                                                                                                    // of
-                                                                                                    // unknown
-                                                                                                    // tokens
-        // tokensVocab.addAll(devSentsAndToks.tokensVocab);
-        // posVocab.addAll(devSentsAndToks.posVocab);
+        SentsAndToks devSentsAndToks = CopyOfSentConllReader.readConlls(
+                devDataPaths.conllFile); // taking
+                                         // care
+                                         // of
+                                         // unknown
+                                         // tokens
+        tokensVocab.addAll(devSentsAndToks.tokensVocab);
+        posVocab.addAll(devSentsAndToks.posVocab);
 
         Map<Integer, Map<FrameIdentifier, List<Scored<FrameSemParse>>>> allDevFsps =
                 readDataSet(devDataPaths, reader, devSentsAndToks.allLemmas.size());

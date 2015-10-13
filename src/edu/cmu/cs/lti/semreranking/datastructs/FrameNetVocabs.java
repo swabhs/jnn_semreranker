@@ -2,8 +2,6 @@ package edu.cmu.cs.lti.semreranking.datastructs;
 
 import java.util.Set;
 
-import edu.cmu.cs.lti.semreranking.utils.FrequencySet;
-
 public class FrameNetVocabs {
 
     public Set<String> tokens;
@@ -13,13 +11,13 @@ public class FrameNetVocabs {
     public Set<String> frameArguments;
 
     public FrameNetVocabs(
-            FrequencySet tokens,
-            FrequencySet posTags,
+            Set<String> tokens,
+            Set<String> posTags,
             // Set<String> goldFNPosTags,
             Set<String> frameIds,
             Set<String> frameArguments) {
-        this.tokens = tokens.keySet();
-        this.posTags = posTags.keySet();
+        this.tokens = tokens;
+        this.posTags = posTags;
         // this.goldFNPosTags = goldFNPosTags;
         this.frameIds = frameIds;
         this.frameArguments = frameArguments;

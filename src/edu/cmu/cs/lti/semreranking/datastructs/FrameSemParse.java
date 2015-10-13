@@ -6,12 +6,12 @@ import edu.cmu.cs.lti.nlp.swabha.basic.Pair;
 
 public class FrameSemParse {
     public final String id;
-    public final int predStartPos;
-    public final int predEndPos;
+    public final int tarStartPos;
+    public final int tarEndPos;
 
     public final String lexicalUnit;
-    public final String predToken;
-    public final String predPosTag;
+    public final String tarToken;
+    public final String tarPosTag;
 
     public Set<Argument> arguments;
     public final int numArgs;
@@ -20,25 +20,25 @@ public class FrameSemParse {
 
     public FrameSemParse(
             String id,
-            int predStartPos,
-            int predEndPos,
+            int tarStartPos,
+            int tarEndPos,
             String lexicalUnit,
-            String predToken,
+            String tarToken,
             Set<Argument> arguments,
             double score) {
         this.id = id;
-        this.predStartPos = predStartPos;
-        this.predEndPos = predEndPos;
+        this.tarStartPos = tarStartPos;
+        this.tarEndPos = tarEndPos;
         this.lexicalUnit = lexicalUnit;
-        this.predToken = predToken;
-        this.predPosTag = lexicalUnit.split("\\.")[1];
+        this.tarToken = tarToken;
+        this.tarPosTag = lexicalUnit.split("\\.")[1];
         this.arguments = arguments;
         this.semaforScore = score;
         this.numArgs = arguments.size();
     }
 
     public void print() {
-        System.out.println("FRAME " + id + "\t" + predStartPos + ":" + predEndPos);
+        System.out.println("FRAME " + id + "\t" + tarStartPos + ":" + tarEndPos);
         System.out.println("---args---");
         for (Argument a : arguments) {
             System.out.println(a.id + "\t" + a.start + ":" + a.end);
@@ -60,18 +60,18 @@ public class FrameSemParse {
         builder.append(id); // 3
         builder.append("\t");
 
-        StringBuilder predPosBuilder = new StringBuilder();
-        for (int i = predStartPos; i <= predEndPos; i++) {
-            predPosBuilder.append(i);
-            if (i != predEndPos) {
-                predPosBuilder.append("_");
+        StringBuilder tarPosBuilder = new StringBuilder();
+        for (int i = tarStartPos; i <= tarEndPos; i++) {
+            tarPosBuilder.append(i);
+            if (i != tarEndPos) {
+                tarPosBuilder.append("_");
             }
         }
         builder.append(lexicalUnit); // 4
         builder.append("\t");
-        builder.append(predPosBuilder.toString()); // 5
+        builder.append(tarPosBuilder.toString()); // 5
         builder.append("\t");
-        builder.append(predToken); // 6
+        builder.append(tarToken); // 6
         builder.append("\t");
 
         builder.append(exNum); // 7
@@ -113,19 +113,19 @@ public class FrameSemParse {
             return false;
         if (numArgs != other.numArgs)
             return false;
-        if (predEndPos != other.predEndPos)
+        if (tarEndPos != other.tarEndPos)
             return false;
-        if (predPosTag == null) {
-            if (other.predPosTag != null)
+        if (tarPosTag == null) {
+            if (other.tarPosTag != null)
                 return false;
-        } else if (!predPosTag.equals(other.predPosTag))
+        } else if (!tarPosTag.equals(other.tarPosTag))
             return false;
-        if (predStartPos != other.predStartPos)
+        if (tarStartPos != other.tarStartPos)
             return false;
-        if (predToken == null) {
-            if (other.predToken != null)
+        if (tarToken == null) {
+            if (other.tarToken != null)
                 return false;
-        } else if (!predToken.equals(other.predToken))
+        } else if (!tarToken.equals(other.tarToken))
             return false;
         if (Double.doubleToLongBits(semaforScore) != Double.doubleToLongBits(other.semaforScore))
             return false;
@@ -134,19 +134,19 @@ public class FrameSemParse {
 
     public static class FrameIdentifier {
         public String frameId;
-        public int predStartPos;
-        public int predEndPos;
+        public int tarStartPos;
+        public int tarEndPos;
         public Pair<Short, Short> sentIdx;
 
-        public FrameIdentifier(String frameId, int predStartPos, int predEndPos) {
-            this(frameId, predStartPos, predEndPos, new Pair<Short, Short>((short) -1, (short) -1));
+        public FrameIdentifier(String frameId, int tarStartPos, int tarEndPos) {
+            this(frameId, tarStartPos, tarEndPos, new Pair<Short, Short>((short) -1, (short) -1));
         }
 
-        public FrameIdentifier(String frameId, int predStartPos, int predEndPos,
+        public FrameIdentifier(String frameId, int tarStartPos, int tarEndPos,
                 Pair<Short, Short> sentIdx) {
             this.frameId = frameId;
-            this.predStartPos = predStartPos;
-            this.predEndPos = predEndPos;
+            this.tarStartPos = tarStartPos;
+            this.tarEndPos = tarEndPos;
             this.sentIdx = sentIdx;
         }
 
@@ -156,9 +156,9 @@ public class FrameSemParse {
             builder.append("frame id:\t");
             builder.append(frameId);
             builder.append("\nstart:\t");
-            builder.append(predStartPos);
+            builder.append(tarStartPos);
             builder.append("\nend:\t");
-            builder.append(predEndPos);
+            builder.append(tarEndPos);
             return builder.toString();
         }
 
@@ -167,8 +167,8 @@ public class FrameSemParse {
             final int prime = 31;
             int result = 1;
             result = prime * result + ((frameId == null) ? 0 : frameId.hashCode());
-            result = prime * result + predEndPos;
-            result = prime * result + predStartPos;
+            result = prime * result + tarEndPos;
+            result = prime * result + tarStartPos;
             return result;
         }
 
@@ -186,16 +186,16 @@ public class FrameSemParse {
                     return false;
             } else if (!frameId.equals(other.frameId))
                 return false;
-            if (predEndPos != other.predEndPos)
+            if (tarEndPos != other.tarEndPos)
                 return false;
-            if (predStartPos != other.predStartPos)
+            if (tarStartPos != other.tarStartPos)
                 return false;
             return true;
         }
     }
 
     public FrameIdentifier getIdentifier() {
-        return new FrameIdentifier(id, predStartPos, predEndPos);
+        return new FrameIdentifier(id, tarStartPos, tarEndPos);
     }
 
 }

@@ -93,7 +93,7 @@ public class FspRerankerApp {
                                 fspInpArrs,
                                 inference,
                                 fsp);
-                        goldRankScoreMap.put(goldRank, score); // TODO : means nothing yet
+                        goldRankScoreMap.put(goldRank, score);
                     }
 
                     inference.init();
@@ -105,7 +105,7 @@ public class FspRerankerApp {
 
                     if (exNum == trainData.trainInstances.size() - 1 || exNum % batchSize == 0) {
                         // inference.commit(0); // if you want to overfit to train. if u want to
-                        // generalize, uncomment and use below...
+                        // generalize, comment this out and use below...
                         network.update();
                         lookupTables.posTable.updateWeights(0.0, 0.0);
                         lookupTables.frameArgTable.updateWeights(0.0, 0.0);
@@ -156,7 +156,7 @@ public class FspRerankerApp {
         inference.addNeurons(frameLinear);
 
         FrameSemParse fsp = scoredFsp.entity;
-        for (int pos = fsp.predStartPos; pos <= fsp.predEndPos; pos++) {
+        for (int pos = fsp.tarStartPos; pos <= fsp.tarEndPos; pos++) {
             inference.addMapping(new OutputMappingDenseToDense(
                     tokenInpArray[pos], frameLinear, network.tokenLayer));
             inference.addMapping(new OutputMappingDenseToDense(
@@ -258,8 +258,8 @@ public class FspRerankerApp {
                             fspInpArrs,
                             inference,
                             fsp);
-                    fspScoreMap.put(fsp, score); // TODO : means nothing yet
-                    rankScoreMap.put(rank, score); // TODO : means nothing yet
+                    fspScoreMap.put(fsp, score);
+                    rankScoreMap.put(rank, score);
                 }
                 inference.init();
                 inference.forward();

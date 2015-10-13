@@ -37,7 +37,7 @@ public class FspInputNeuronArrays {
             frameIdsArray[i].setName(frame.id);
             frameIds[i] = frame.id;
             // posArray[i].setName("pos" + frame.id);
-            predPostags[i] = frame.predPosTag;
+            predPostags[i] = frame.tarPosTag;
 
             for (Argument arg : frame.arguments) {
                 String frameArgId = FormatUtils.makeFrameArgId(frame.id, arg.id);

@@ -4,10 +4,12 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.internal.Lists;
+import com.google.common.collect.Maps;
 
 import edu.cmu.cs.lti.nlp.swabha.basic.Conll;
 import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileReader;
@@ -15,6 +17,7 @@ import edu.cmu.cs.lti.nlp.swabha.fileutils.BasicFileWriter;
 import edu.cmu.cs.lti.semreranking.Data;
 import edu.cmu.cs.lti.semreranking.DataInstance;
 import edu.cmu.cs.lti.semreranking.SemRerankerMain;
+import edu.cmu.cs.lti.semreranking.TestData;
 import edu.cmu.cs.lti.semreranking.TestInstance;
 import edu.cmu.cs.lti.semreranking.TrainData;
 import edu.cmu.cs.lti.semreranking.TrainInstance;
@@ -251,6 +254,38 @@ public class Oracle {
         double fscore = Result.getFscore(precision, recall);
         macrof1 /= data.numInstances;
         return new Result(precision, recall, fscore, macrof1);
+    }
+
+    /** Performs an oracle study of distribution of test scores by their rank */
+    public static void rankWiseAnalysis(TestData data) {
+        Map<Integer, Double> bestRankMap = Maps.newHashMap();
+
+        int totalInsts = 0;
+        for (int exNum = 0; exNum < data.numInstances; exNum++) {
+            for (FrameIdentifier identifier : data.getFramesInEx(exNum)) {
+                totalInsts += 1;
+                DataInstance inst = data.getInstance(exNum, identifier);
+                double maxF = Double.NEGATIVE_INFINITY;
+                int bestRank = 0;
+                for (int rank = 0; rank < inst.numUniqueParses; rank++) {
+
+                    Scored<FrameSemParse> fsp = inst.getParseAtRank(rank);
+                    if (fsp.fscore > maxF) {
+                        maxF = fsp.fscore;
+                        bestRank = rank;
+                    }
+                }
+                if (bestRankMap.containsKey(bestRank)) {
+                    bestRankMap.put(bestRank, bestRankMap.get(bestRank) + 1.0);
+                } else {
+                    bestRankMap.put(bestRank, 1.0);
+                }
+            }
+        }
+
+        for (int rank : bestRankMap.keySet()) {
+            System.err.println("rank " + rank + " = " + bestRankMap.get(rank) / totalInsts);
+        }
     }
 
     public static void main(String[] args) {

@@ -104,7 +104,7 @@ public class SemRerankerMain {
         printOracle(allData);
     }
 
-    static void printOracle(AllRerankingData allData) {
+    public static void printOracle(AllRerankingData allData) {
         TrainData trainData = allData.trainData;
         TestData devData = allData.devData;
 
